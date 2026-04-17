@@ -1,0 +1,20 @@
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: iot-care-mongo
+    restart: unless-stopped
+    ports:
+      # Host port is driven by MONGO_HOST_PORT in .env (default 27019).
+      # Container port stays 27017 internally.
+      - '${MONGO_HOST_PORT:-27019}:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  mongo-data:
