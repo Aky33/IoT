@@ -159,7 +159,7 @@ Vitest + supertest. Testy importují `createApp()` a hitují in-process. Konvenc
 
 ```json
 {
-  "data": [ { }, { } ],
+  "data": [{}, {}],
   "meta": { "page": 1, "pageSize": 50, "total": 137 }
 }
 ```

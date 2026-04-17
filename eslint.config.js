@@ -4,7 +4,7 @@ import prettier from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ['node_modules/**', 'coverage/**', '*.local.md'],
+    ignores: ['**/node_modules/**', '**/coverage/**', '*.local.md'],
   },
   js.configs.recommended,
   {

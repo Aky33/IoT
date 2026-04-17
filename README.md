@@ -1,15 +1,12 @@
-# IoT Care Button Backend
+# IoT Care Button — Monorepo
 
-Backend API pro IoT asistenční tlačítko. Osoba se sníženou mobilitou zmáčkne fyzické tlačítko a systém odešle push notifikaci pečující osobě do mobilní aplikace.
+IoT asistenční tlačítko. Osoba se sníženou mobilitou zmáčkne fyzické tlačítko a systém odešle push notifikaci pečující osobě.
 
-- **Standard** notifikace — krátký stisk, 5s odpočet s možností zrušení.
-- **Urgent** notifikace — dlouhý stisk, okamžité odeslání prioritním kanálem.
+## Apps
 
-## Tech Stack
+- [apps/backend](apps/backend) — Node.js / Express backend API (user/caregiver/device management + notifikace)
 
-Node.js (ES modules) · Express.js 5 · MongoDB (Mongoose) · Docker (pro lokální Mongo) · Vitest + supertest (testy).
-
-Push-notifikační vrstva zatím není rozhodnuta — v kostře se neřeší.
+Další aplikace (mobile, web admin, firmware) přidáváme pod `apps/`.
 
 ## Quick Start
 
@@ -17,24 +14,48 @@ Předpoklady: Node.js 18+, Docker Desktop (nebo OrbStack).
 
 ```bash
 npm install
-npm run setup   # vytvoří .env a nastartuje Mongo v Dockeru
-npm run dev     # spustí server na http://localhost:3000
+npm run setup   # vytvoří backend .env a nastartuje Mongo v Dockeru
+npm run dev     # spustí backend server na http://localhost:3000
 ```
 
-Ověření běhu: `curl http://localhost:3000/health` → `{"status":"ok",...}`.
+Všechny root scripty (`dev`, `test`, `db:up`, …) interně delegují na příslušný workspace.
 
-Podrobný popis příkazů, env proměnných a troubleshootingu je v [docs/setup-guide.md](docs/setup-guide.md).
-
-## Co je v kostře — stav
-
-**Datový model** (`src/models/`) je **finální**, odpovídá specifikaci projektu. User je jako jediný resource implementovaný end-to-end (route → controller → DAO → model) a slouží jako **referenční vzor** pro Caregiver, Device a Notification.
-
-**Ostatní vrstvy** (service layer, rate limiting, testy, pagination helpers, dtoIn validace, …) jsou připravené jako **šablony** (soubory označené `TEMPLATE` v hlavičce) — ukazují best-practice strukturu. 
-
-Kompletní mapa vrstev, kontraktů, patternů a návod „jak přidat nový resource" je v [docs/project-structure.md](docs/project-structure.md).
+Detail (env proměnné, porty, troubleshooting) v [apps/backend/docs/setup-guide.md](apps/backend/docs/setup-guide.md).
 
 ## Dokumentace
 
-- [docs/setup-guide.md](docs/setup-guide.md) — setup, denní příkazy, env proměnné, porty, troubleshooting
-- [docs/project-structure.md](docs/project-structure.md) — rozpis vrstev, tok requestu, template patterny (service, rate limit, pagination, soft delete, request ID, testy), návod na přidání resource
-- [docs/git-workflow.md](docs/git-workflow.md) — branch naming (Conventional Branch), commit messages (Conventional Commits), pull requesty
+Repo-level:
+
+- [docs/git-workflow.md](docs/git-workflow.md) — branching (Conventional Branch), commit messages (Conventional Commits), pull requesty
+
+Backend-specific:
+
+- [apps/backend/docs/setup-guide.md](apps/backend/docs/setup-guide.md) — setup, denní příkazy, env proměnné, porty, troubleshooting
+- [apps/backend/docs/project-structure.md](apps/backend/docs/project-structure.md) — rozpis vrstev, tok requestu, response shapes, pojmenování
+
+## Struktura repozitáře
+
+```text
+.
+├── apps/
+│   └── backend/            # Node.js/Express API
+├── docs/                   # cross-cutting docs (git workflow, …)
+├── .github/                # PR template, repo-level
+├── eslint.config.js        # sdílené linting pro celý monorepo
+├── .prettierrc.json        # sdílený formátovací styl
+├── package.json            # npm workspaces root
+└── README.md
+```
+
+## NPM workspaces
+
+Repo používá nativní npm workspaces. Sdílené dev dependencies (ESLint, Prettier) jsou v root `package.json`. Per-app dependencies (express, mongoose, vitest, …) jsou v `apps/<app>/package.json`.
+
+Konkrétní commandy pro jeden workspace:
+
+```bash
+npm run dev --workspace @iot/backend
+npm install some-dep --workspace @iot/backend
+```
+
+Root commandy `npm run dev`, `npm test` atd. jsou delegace na backend workspace.

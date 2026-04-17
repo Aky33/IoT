@@ -91,7 +91,6 @@ Nepovinný kontext v závorkách — obvykle resource nebo modul:
 - max ~72 znaků na první řádek
 - bez tečky na konci první řádky
 
-
 ## Pracovní tok
 
 1. **Sync s `main`**

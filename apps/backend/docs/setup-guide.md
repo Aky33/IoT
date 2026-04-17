@@ -58,7 +58,6 @@ Pokud máš 27019 obsazený jinou službou, změň `MONGO_HOST_PORT` v `.env` a 
 - `MONGO_DB_NAME` (default `iot-care`) — název databáze
 - `MONGODB_URI` — odvozené z výše uvedených; nastav ručně pro Atlas nebo autentizovaný connect
 
-
 ## Reset databáze
 
 ```bash
