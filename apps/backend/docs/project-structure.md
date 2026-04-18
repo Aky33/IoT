@@ -60,17 +60,17 @@ Error flow:
 
 ### [src/routes/](../src/routes/) — Express Router
 
-Definice URL cest a HTTP metod, zřetězení middleware → controller. Jeden soubor per resource. URL patterny dodržují REST konvence.
+Definice URL cest a HTTP metod, zřetězení middleware → controller. Jeden soubor per resource. URL patterny dodržují týmovou API spec.
 
-REST CRUD vzor pro každý resource:
+URL vzor per resource:
 
-| Metoda | URL               | Akce                      |
-| ------ | ----------------- | ------------------------- |
-| POST   | `/<resource>`     | create                    |
-| GET    | `/<resource>`     | list (`?page=&pageSize=`) |
-| GET    | `/<resource>/:id` | read                      |
-| PUT    | `/<resource>/:id` | update                    |
-| DELETE | `/<resource>/:id` | soft delete (204)         |
+| Metoda | URL                       | Akce                      |
+| ------ | ------------------------- | ------------------------- |
+| POST   | `/<resource>/create`      | create                    |
+| GET    | `/<resource>/all`         | list (`?page=&pageSize=`) |
+| GET    | `/<resource>/get/:id`     | read                      |
+| PUT    | `/<resource>/edit/:id`    | update                    |
+| DELETE | `/<resource>/delete/:id`  | soft delete (204)         |
 
 ### [src/controllers/](../src/controllers/) — HTTP handlers
 
