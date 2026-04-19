@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestId } from './middleware/requestId.js';
+import { notificationsRouter } from './routes/notifications.js';
 import { usersRouter } from './routes/users.js';
 
 // Morgan custom token → logs the correlation ID set by requestId middleware.
@@ -30,6 +31,7 @@ export function createApp() {
   });
 
   app.use('/users', usersRouter);
+  app.use('/notifications', notificationsRouter);
   // TODO: register additional resource routers as colleagues implement them.
   //   app.use('/caregivers', caregiversRouter);
   //   app.use('/devices', devicesRouter);
