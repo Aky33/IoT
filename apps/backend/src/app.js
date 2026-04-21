@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestId } from './middleware/requestId.js';
+import { notificationsRouter } from './routes/notifications.js';
 import { usersRouter } from './routes/users.js';
 import { caregiversRouter } from "./routes/caregivers.js";
 
@@ -31,6 +32,7 @@ export function createApp() {
   });
 
   app.use('/users', usersRouter);
+  app.use('/notifications', notificationsRouter);
   app.use("/caregivers", caregiversRouter);
   // TODO: register additional resource routers as colleagues implement them.
   //   app.use('/devices', devicesRouter);
