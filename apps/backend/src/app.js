@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestId } from './middleware/requestId.js';
 import { usersRouter } from './routes/users.js';
+import { caregiversRouter } from "./routes/caregivers.js";
 
 // Morgan custom token → logs the correlation ID set by requestId middleware.
 morgan.token('id', (req) => req.id);
@@ -30,8 +31,8 @@ export function createApp() {
   });
 
   app.use('/users', usersRouter);
+  app.use("/caregivers", caregiversRouter);
   // TODO: register additional resource routers as colleagues implement them.
-  //   app.use('/caregivers', caregiversRouter);
   //   app.use('/devices', devicesRouter);
   //
   // For unauthenticated write endpoints apply rate limiting per route:
