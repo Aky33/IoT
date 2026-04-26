@@ -231,7 +231,7 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"userId\": \"{{ _.userId }}\",\n  \"caregiverId\": \"{{ _.caregiverId }}\",\n  \"name\": \"Tlačítko obývák\",\n  \"type\": \"button\",\n  \"status\": \"active\"\n}"
+        "text": "{\n  \"userId\": \"{{ _.userId }}\",\n  \"caregiverId\": \"{{ _.caregiverId }}\",\n  \"name\": \"Tlačítko obývák\"\n}"
       },
       "afterResponseScript": "const body = insomnia.response.json();\nif (body.id) {\n  insomnia.environment.set('deviceId', body.id);\n}\n// deviceSecret: read from DB (select:false, not in API response)\n// mongosh: db.devices.findOne({_id: ObjectId('...')}, {deviceSecret:1})"
     },
