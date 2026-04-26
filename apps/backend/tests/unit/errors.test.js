@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { AppError, ValidationError, NotFoundError } from '../../src/errors/AppError.js';
+import { AppError, ValidationError, NotFoundError, ForbiddenError } from '../../src/errors/AppError.js';
 
 describe('AppError', () => {
   it('has correct properties', () => {
@@ -39,5 +39,16 @@ describe('NotFoundError', () => {
     expect(err.message).toBe('User not found.');
     expect(err.status).toBe(404);
     expect(err.details).toEqual({ id: '123abc' });
+  });
+});
+
+describe('ForbiddenError', () => {
+  it('sets correct defaults', () => {
+    const err = new ForbiddenError();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.code).toBe('forbidden');
+    expect(err.status).toBe(403);
+    expect(err.message).toBe('You do not have permission to access this resource.');
+    expect(err.details).toEqual({});
   });
 });
