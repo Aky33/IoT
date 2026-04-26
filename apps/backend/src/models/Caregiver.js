@@ -19,6 +19,12 @@ const caregiverSchema = new Schema(
       match: EMAIL_RE,
     },
     phone: { type: String, maxlength: 20, match: PHONE_RE },
+    passwordHash: { type: String, required: true, select: false },
+    role: { type: String, enum: ['caregiver', 'admin'], default: 'caregiver' },
+    refreshTokens: {
+      type: [{ token: String, expiresAt: Date, _id: false }],
+      select: false,
+    },
     fcmToken: { type: String },
     notificationPreferences: {
       sound: { type: Boolean, default: true },

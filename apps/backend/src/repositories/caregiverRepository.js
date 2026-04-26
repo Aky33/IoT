@@ -1,32 +1,76 @@
-import { Caregiver } from "../models/Caregiver.js";
+import { Caregiver } from '../models/Caregiver.js';
+import { Device } from '../models/Device.js';
+
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 200;
+
+function normalizePageInfo({ page = 1, pageSize = DEFAULT_PAGE_SIZE } = {}) {
+  const p = Math.max(1, Number(page) || 1);
+  const s = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(pageSize) || DEFAULT_PAGE_SIZE));
+  return { page: p, pageSize: s, skip: (p - 1) * s };
+}
 
 export const caregiverRepository = {
   async create(data) {
-    return await Caregiver.create(data);
-  },
-
-  async findAll() {
-    return await Caregiver.find({ isActive: true });
+    const doc = await Caregiver.create(data);
+    return doc.toJSON();
   },
 
   async findById(id) {
-    return await Caregiver.findOne({ _id: id, isActive: true });
+    const doc = await Caregiver.findOne({ _id: id, isActive: true });
+    return doc ? doc.toJSON() : null;
+  },
+
+  async findMany(pageInfo) {
+    const { page, pageSize, skip } = normalizePageInfo(pageInfo);
+    const filter = { isActive: true };
+    const [items, total] = await Promise.all([
+      Caregiver.find(filter).skip(skip).limit(pageSize).sort({ createdAt: -1 }),
+      Caregiver.countDocuments(filter),
+    ]);
+    return {
+      data: items.map((d) => d.toJSON()),
+      meta: { page, pageSize, total },
+    };
+  },
+
+  async findByUser(userId, pageInfo) {
+    const { page, pageSize, skip } = normalizePageInfo(pageInfo);
+    const caregiverIds = await Device.find({ userId, isActive: true }).distinct('caregiverId');
+    const filter = { _id: { $in: caregiverIds }, isActive: true };
+    const [items, total] = await Promise.all([
+      Caregiver.find(filter).skip(skip).limit(pageSize).sort({ createdAt: -1 }),
+      Caregiver.countDocuments(filter),
+    ]);
+    return {
+      data: items.map((d) => d.toJSON()),
+      meta: { page, pageSize, total },
+    };
   },
 
   async update(id, data) {
-    return await Caregiver.findOneAndUpdate(
+    const doc = await Caregiver.findOneAndUpdate({ _id: id, isActive: true }, data, {
+      new: true,
+      runValidators: true,
+    });
+    return doc ? doc.toJSON() : null;
+  },
+
+  async updateFcmToken(id, fcmToken) {
+    const doc = await Caregiver.findOneAndUpdate(
       { _id: id, isActive: true },
-      data,
-      { new: true }
+      { fcmToken },
+      { new: true },
     );
+    return doc ? doc.toJSON() : null;
   },
 
   async remove(id) {
-    const result = await Caregiver.findOneAndUpdate(
+    const doc = await Caregiver.findOneAndUpdate(
       { _id: id, isActive: true },
-      { isActive: false }
+      { isActive: false },
+      { new: true },
     );
-
-    return !!result;
+    return doc !== null;
   },
 };

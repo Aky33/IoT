@@ -6,14 +6,8 @@ import { createUserSchema, updateUserSchema } from '../validation/userValidation
 
 export const usersRouter = Router();
 
-// REST conventions:
-//   POST   /users       → create
-//   GET    /users       → list (supports ?page=&pageSize=)
-//   GET    /users/:id   → read
-//   PUT    /users/:id   → update
-//   DELETE /users/:id   → soft delete (204 No Content)
-usersRouter.post('/', validateBody(createUserSchema), userController.create);
-usersRouter.get('/', userController.list);
-usersRouter.get('/:id', userController.get);
-usersRouter.put('/:id', validateBody(updateUserSchema), userController.update);
-usersRouter.delete('/:id', userController.remove);
+usersRouter.post('/create', validateBody(createUserSchema), userController.create);
+usersRouter.get('/all', userController.list);
+usersRouter.get('/get/:id', userController.get);
+usersRouter.put('/edit/:id', validateBody(updateUserSchema), userController.update);
+usersRouter.delete('/delete/:id', userController.remove);

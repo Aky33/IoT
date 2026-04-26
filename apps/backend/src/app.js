@@ -2,45 +2,54 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import mongoose from 'mongoose';
+import cookieParser from 'cookie-parser';
 
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestId } from './middleware/requestId.js';
-import { notificationsRouter } from './routes/notifications.js';
-import { usersRouter } from './routes/users.js';
-import { caregiversRouter } from "./routes/caregivers.js";
-import { devicesRouter } from './routes/devices.js';
+import { authenticate } from './middleware/authenticate.js';
+import { authenticateDevice } from './middleware/authenticateDevice.js';
+import { authorize } from './middleware/authorize.js';
 
-// Morgan custom token → logs the correlation ID set by requestId middleware.
+import { authRouter } from './routes/auth.js';
+import { usersRouter } from './routes/users.js';
+import { caregiversRouter } from './routes/caregivers.js';
+import { devicesRouter } from './routes/devices.js';
+import { notificationsRouter } from './routes/notifications.js';
+import { invitationsRouter } from './routes/invitations.js';
+
 morgan.token('id', (req) => req.id);
 
 export function createApp() {
   const app = express();
 
   app.use(requestId);
-  app.use(cors());
+  app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
+  app.use(cookieParser());
   app.use(morgan(':id :method :url :status :response-time ms - :res[content-length]'));
 
-  app.get('/health', (req, res) => {
+  // --- Public ---
+  app.get('/health', (_req, res) => {
     const dbState = mongoose.connection.readyState;
     const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
     const status = dbState === 1 ? 'ok' : 'degraded';
-    res.status(dbState === 1 ? 200 : 503).json({
-      status,
-      db: dbStatus,
-      timestamp: new Date().toISOString(),
-    });
+    res
+      .status(dbState === 1 ? 200 : 503)
+      .json({ status, db: dbStatus, timestamp: new Date().toISOString() });
   });
 
-  app.use('/users', usersRouter);
-  app.use('/notifications', notificationsRouter);
-  app.use("/caregivers", caregiversRouter);
-  app.use('/devices', devicesRouter);
-  //
-  // For unauthenticated write endpoints apply rate limiting per route:
-  //   import { notificationsRateLimit } from './middleware/rateLimit.js';
-  //   app.use('/notifications/create', notificationsRateLimit, notificationsRouter);
+  app.use('/auth', authRouter);
 
+  // --- IoT Device (HMAC auth) ---
+  app.use('/notifications', authenticateDevice, notificationsRouter);
+
+  // --- Caregiver / Admin (JWT auth) ---
+  app.use('/invitations', authenticate, authorize('admin'), invitationsRouter);
+  app.use('/users', authenticate, authorize('admin'), usersRouter);
+  app.use('/caregivers', authenticate, authorize('admin'), caregiversRouter);
+  app.use('/devices', authenticate, authorize('admin'), devicesRouter);
+
+  // --- 404 ---
   app.use((req, res) => {
     res.status(404).json({
       error: {

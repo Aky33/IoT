@@ -1,0 +1,302 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-04-17",
+  "__export_source": "insomnia.desktop",
+  "resources": [
+    {
+      "_id": "wrk_iot",
+      "_type": "workspace",
+      "name": "IoT Care Backend",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_iot",
+      "name": "Base",
+      "data": {
+        "baseUrl": "http://localhost:3000",
+        "accessToken": "",
+        "deviceId": "",
+        "deviceSecret": ""
+      }
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_iot",
+      "name": "1. Auth"
+    },
+    {
+      "_id": "req_register",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Register",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstName\": \"Marie\",\n  \"lastName\": \"Nováková\",\n  \"email\": \"marie@example.com\",\n  \"password\": \"securePass123\",\n  \"phone\": \"+420123456789\",\n  \"invitationCode\": \"{{ _.invitationCode }}\"\n}"
+      },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body.accessToken) {\n  insomnia.environment.set('accessToken', body.accessToken);\n}\nif (body.caregiver?.id) {\n  insomnia.environment.set('caregiverId', body.caregiver.id);\n}"
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"marie@example.com\",\n  \"password\": \"securePass123\"\n}"
+      },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body.accessToken) {\n  insomnia.environment.set('accessToken', body.accessToken);\n}"
+    },
+    {
+      "_id": "req_refresh",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Refresh Token",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/auth/refresh",
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body.accessToken) {\n  insomnia.environment.set('accessToken', body.accessToken);\n}"
+    },
+    {
+      "_id": "req_logout",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Logout",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/auth/logout"
+    },
+    {
+      "_id": "fld_invitations",
+      "_type": "request_group",
+      "parentId": "wrk_iot",
+      "name": "1b. Invitations (admin)"
+    },
+    {
+      "_id": "req_create_invitation",
+      "_type": "request",
+      "parentId": "fld_invitations",
+      "name": "Create Invitation",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/invitations/create",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"ttlHours\": 24\n}"
+      },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body.code) {\n  insomnia.environment.set('invitationCode', body.code);\n}"
+    },
+    {
+      "_id": "req_list_invitations",
+      "_type": "request",
+      "parentId": "fld_invitations",
+      "name": "List Invitations",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/invitations/all",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
+      "_id": "req_revoke_invitation",
+      "_type": "request",
+      "parentId": "fld_invitations",
+      "name": "Revoke Invitation",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/invitations/revoke/REPLACE_WITH_INVITATION_ID",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
+      "_id": "fld_users",
+      "_type": "request_group",
+      "parentId": "wrk_iot",
+      "name": "2. Users (admin)"
+    },
+    {
+      "_id": "req_create_user",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "Create User",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/users/create",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstName\": \"Jan\",\n  \"lastName\": \"Novák\",\n  \"notes\": \"Diabetik\"\n}"
+      },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body.id) {\n  insomnia.environment.set('userId', body.id);\n}"
+    },
+    {
+      "_id": "req_list_users",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "List Users",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/users/all?page=1&pageSize=10",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
+      "_id": "req_get_user",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "Get User",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/users/get/{{ _.userId }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
+      "_id": "req_edit_user",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "Edit User",
+      "method": "PUT",
+      "url": "{{ _.baseUrl }}/users/edit/{{ _.userId }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstName\": \"Jan\",\n  \"lastName\": \"Novák\",\n  \"notes\": \"Updated notes\",\n  \"isActive\": true\n}"
+      }
+    },
+    {
+      "_id": "req_delete_user",
+      "_type": "request",
+      "parentId": "fld_users",
+      "name": "Delete User (soft)",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/users/delete/{{ _.userId }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
+      "_id": "fld_caregivers",
+      "_type": "request_group",
+      "parentId": "wrk_iot",
+      "name": "3. Caregivers (admin)"
+    },
+    {
+      "_id": "req_create_caregiver",
+      "_type": "request",
+      "parentId": "fld_caregivers",
+      "name": "Create Caregiver",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/caregivers/create",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstName\": \"Eva\",\n  \"lastName\": \"Svobodová\",\n  \"email\": \"eva@example.com\",\n  \"phone\": \"+420987654321\"\n}"
+      },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body.id) {\n  insomnia.environment.set('caregiverId', body.id);\n}"
+    },
+    {
+      "_id": "req_list_caregivers",
+      "_type": "request",
+      "parentId": "fld_caregivers",
+      "name": "List Caregivers",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/caregivers/all?page=1&pageSize=10",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
+      "_id": "fld_devices",
+      "_type": "request_group",
+      "parentId": "wrk_iot",
+      "name": "4. Devices (admin)"
+    },
+    {
+      "_id": "req_create_device",
+      "_type": "request",
+      "parentId": "fld_devices",
+      "name": "Create Device",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/devices/create",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"userId\": \"{{ _.userId }}\",\n  \"caregiverId\": \"{{ _.caregiverId }}\",\n  \"name\": \"Tlačítko obývák\",\n  \"type\": \"button\",\n  \"status\": \"active\"\n}"
+      },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body.id) {\n  insomnia.environment.set('deviceId', body.id);\n}\n// deviceSecret: read from DB (select:false, not in API response)\n// mongosh: db.devices.findOne({_id: ObjectId('...')}, {deviceSecret:1})"
+    },
+    {
+      "_id": "req_list_devices",
+      "_type": "request",
+      "parentId": "fld_devices",
+      "name": "List Devices",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/devices/all?page=1&pageSize=10",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
+      "_id": "fld_notifications",
+      "_type": "request_group",
+      "parentId": "wrk_iot",
+      "name": "5. Notifications (device HMAC)"
+    },
+    {
+      "_id": "req_create_notification",
+      "_type": "request",
+      "parentId": "fld_notifications",
+      "name": "Create Notification (HMAC)",
+      "description": "HMAC headers are auto-generated from deviceId + deviceSecret env vars via pre-request script.\ndeviceSecret must be manually copied from DB (it's not returned by API).",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/notifications/create",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Device-Id", "value": "{{ _.deviceId }}" },
+        { "name": "X-Timestamp", "value": "{{ _.hmacTimestamp }}" },
+        { "name": "X-Signature", "value": "{{ _.hmacSignature }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"type\": \"standard\"\n}"
+      },
+      "preRequestScript": "const crypto = require('crypto');\nconst ts = Math.floor(Date.now() / 1000).toString();\nconst body = JSON.stringify({ type: 'standard' });\nconst payload = `POST|/notifications/create|${ts}|${body}`;\nconst sig = crypto.createHmac('sha256', insomnia.environment.get('deviceSecret')).update(payload).digest('hex');\ninsomnia.environment.set('hmacTimestamp', ts);\ninsomnia.environment.set('hmacSignature', sig);"
+    },
+    {
+      "_id": "req_list_notifications",
+      "_type": "request",
+      "parentId": "fld_notifications",
+      "name": "List Notifications (HMAC)",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/notifications/all?page=1&pageSize=10",
+      "headers": [
+        { "name": "X-Device-Id", "value": "{{ _.deviceId }}" },
+        { "name": "X-Timestamp", "value": "{{ _.hmacTimestamp }}" },
+        { "name": "X-Signature", "value": "{{ _.hmacSignature }}" }
+      ],
+      "preRequestScript": "const crypto = require('crypto');\nconst ts = Math.floor(Date.now() / 1000).toString();\nconst payload = `GET|/notifications/all?page=1&pageSize=10|${ts}|`;\nconst sig = crypto.createHmac('sha256', insomnia.environment.get('deviceSecret')).update(payload).digest('hex');\ninsomnia.environment.set('hmacTimestamp', ts);\ninsomnia.environment.set('hmacSignature', sig);"
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_iot",
+      "name": "0. Health"
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Health Check",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/health"
+    }
+  ]
+}

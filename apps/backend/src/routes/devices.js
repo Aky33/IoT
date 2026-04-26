@@ -7,7 +7,7 @@ import { createDeviceSchema, editDeviceSchema } from '../validation/deviceValida
 export const devicesRouter = Router();
 
 devicesRouter.post('/create', validateBody(createDeviceSchema), deviceController.create);
-devicesRouter.get('/all', deviceController.all);
+devicesRouter.get('/all', deviceController.list);
 devicesRouter.get('/get/:id', deviceController.get);
-devicesRouter.put('/edit/:id', validateBody(editDeviceSchema), deviceController.edit);
+devicesRouter.put('/edit/:id', validateBody(editDeviceSchema), deviceController.update);
 devicesRouter.delete('/delete/:id', deviceController.remove);

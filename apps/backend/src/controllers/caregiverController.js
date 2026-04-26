@@ -1,4 +1,5 @@
-import { caregiverRepository } from "../repositories/caregiverRepository.js";
+import { caregiverRepository } from '../repositories/caregiverRepository.js';
+import { NotFoundError } from '../errors/AppError.js';
 
 export const caregiverController = {
   async create(req, res) {
@@ -7,37 +8,26 @@ export const caregiverController = {
   },
 
   async list(req, res) {
-    const caregivers = await caregiverRepository.findAll();
-    res.json(caregivers);
+    const { page, pageSize } = req.query;
+    const result = await caregiverRepository.findMany({ page, pageSize });
+    res.json(result);
   },
 
   async get(req, res) {
     const caregiver = await caregiverRepository.findById(req.params.id);
-
-    if (!caregiver) {
-      return res.status(404).json({ error: "Caregiver not found" });
-    }
-
+    if (!caregiver) throw new NotFoundError('Caregiver', req.params.id);
     res.json(caregiver);
   },
 
   async update(req, res) {
     const caregiver = await caregiverRepository.update(req.params.id, req.body);
-
-    if (!caregiver) {
-      return res.status(404).json({ error: "Caregiver not found" });
-    }
-
+    if (!caregiver) throw new NotFoundError('Caregiver', req.params.id);
     res.json(caregiver);
   },
 
   async remove(req, res) {
-    const success = await caregiverRepository.remove(req.params.id);
-
-    if (!success) {
-      return res.status(404).json({ error: "Caregiver not found" });
-    }
-
+    const deleted = await caregiverRepository.remove(req.params.id);
+    if (!deleted) throw new NotFoundError('Caregiver', req.params.id);
     res.status(204).end();
   },
 };
