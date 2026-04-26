@@ -216,7 +216,7 @@
       "_id": "fld_devices",
       "_type": "request_group",
       "parentId": "wrk_iot",
-      "name": "4. Devices (admin)"
+      "name": "4. Devices (admin: CRUD, caregiver: list + get)"
     },
     {
       "_id": "req_create_device",
@@ -248,7 +248,7 @@
       "_id": "fld_notifications",
       "_type": "request_group",
       "parentId": "wrk_iot",
-      "name": "5. Notifications (device HMAC)"
+      "name": "5. Notifications"
     },
     {
       "_id": "req_create_notification",
@@ -274,15 +274,25 @@
       "_id": "req_list_notifications",
       "_type": "request",
       "parentId": "fld_notifications",
-      "name": "List Notifications (HMAC)",
+      "name": "List Notifications (JWT)",
+      "description": "Returns notifications for the authenticated caregiver. Optional deviceId filter.",
       "method": "GET",
       "url": "{{ _.baseUrl }}/notifications/all?page=1&pageSize=10",
       "headers": [
-        { "name": "X-Device-Id", "value": "{{ _.deviceId }}" },
-        { "name": "X-Timestamp", "value": "{{ _.hmacTimestamp }}" },
-        { "name": "X-Signature", "value": "{{ _.hmacSignature }}" }
-      ],
-      "preRequestScript": "const crypto = require('crypto');\nconst ts = Math.floor(Date.now() / 1000).toString();\nconst payload = `GET|/notifications/all?page=1&pageSize=10|${ts}|`;\nconst sig = crypto.createHmac('sha256', insomnia.environment.get('deviceSecret')).update(payload).digest('hex');\ninsomnia.environment.set('hmacTimestamp', ts);\ninsomnia.environment.set('hmacSignature', sig);"
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_list_notifications_by_device",
+      "_type": "request",
+      "parentId": "fld_notifications",
+      "name": "List Notifications by Device (JWT)",
+      "description": "Returns notifications for a specific device, filtered by caregiver ownership.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/notifications/all?page=1&pageSize=10&deviceId={{ _.deviceId }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ]
     },
     {
       "_id": "fld_health",
