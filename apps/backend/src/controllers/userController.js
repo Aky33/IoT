@@ -1,8 +1,7 @@
 import { userRepository } from '../repositories/userRepository.js';
-import { NotFoundError } from '../errors/AppError.js';
+import { Device } from '../models/Device.js';
+import { NotFoundError, ForbiddenError } from '../errors/AppError.js';
 
-// Express 5 auto-catches async rejections — no try/catch boilerplate needed.
-// AppError thrown here propagates to the central errorHandler middleware.
 export const userController = {
   async create(req, res) {
     const user = await userRepository.create(req.body);
@@ -18,6 +17,10 @@ export const userController = {
   async get(req, res) {
     const user = await userRepository.findById(req.params.id);
     if (!user) throw new NotFoundError('User', req.params.id);
+    if (req.user.role !== 'admin') {
+      const owns = await Device.exists({ caregiverId: req.user.sub, userId: req.params.id, isActive: true });
+      if (!owns) throw new ForbiddenError();
+    }
     res.json(user);
   },
 
