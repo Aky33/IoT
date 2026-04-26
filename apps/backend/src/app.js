@@ -14,7 +14,7 @@ import { authRouter } from './routes/auth.js';
 import { usersRouter } from './routes/users.js';
 import { caregiversRouter } from './routes/caregivers.js';
 import { devicesRouter } from './routes/devices.js';
-import { notificationsRouter } from './routes/notifications.js';
+import { notificationCreateRouter, notificationListRouter } from './routes/notifications.js';
 import { invitationsRouter } from './routes/invitations.js';
 
 morgan.token('id', (req) => req.id);
@@ -41,13 +41,14 @@ export function createApp() {
   app.use('/auth', authRouter);
 
   // --- IoT Device (HMAC auth) ---
-  app.use('/notifications', authenticateDevice, notificationsRouter);
+  app.use('/notifications', authenticateDevice, notificationCreateRouter);
 
   // --- Caregiver / Admin (JWT auth) ---
+  app.use('/notifications', authenticate, authorize('caregiver', 'admin'), notificationListRouter);
   app.use('/invitations', authenticate, authorize('admin'), invitationsRouter);
   app.use('/users', authenticate, authorize('admin'), usersRouter);
   app.use('/caregivers', authenticate, authorize('admin'), caregiversRouter);
-  app.use('/devices', authenticate, authorize('admin'), devicesRouter);
+  app.use('/devices', authenticate, authorize('admin', 'caregiver'), devicesRouter);
 
   // --- 404 ---
   app.use((req, res) => {

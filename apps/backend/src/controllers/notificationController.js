@@ -8,8 +8,10 @@ export const notificationController = {
   },
 
   async all(req, res) {
-    const { page, pageSize } = req.query;
-    const result = await notificationRepository.findMany({ page, pageSize });
+    const { page, pageSize, deviceId } = req.query;
+    const filter = { caregiverId: req.user.sub };
+    if (deviceId) filter.deviceId = deviceId;
+    const result = await notificationRepository.findByFilter(filter, { page, pageSize });
     res.json(result);
   },
 };

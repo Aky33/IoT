@@ -4,14 +4,12 @@ import { notificationController } from '../controllers/notificationController.js
 import { validateBody } from '../middleware/validateBody.js';
 import { createNotificationSchema } from '../validation/notificationValidation.js';
 
-export const notificationsRouter = Router();
-
-// Command-style routes per spec:
-//   POST /notifications/create → create notification model
-//   GET  /notifications/all    → list all notification models
-notificationsRouter.post(
+export const notificationCreateRouter = Router();
+notificationCreateRouter.post(
   '/create',
   validateBody(createNotificationSchema),
   notificationController.create,
 );
-notificationsRouter.get('/all', notificationController.all);
+
+export const notificationListRouter = Router();
+notificationListRouter.get('/all', notificationController.all);

@@ -21,3 +21,10 @@ export class NotFoundError extends AppError {
     this.name = 'NotFoundError';
   }
 }
+
+export class ForbiddenError extends AppError {
+  constructor() {
+    super('forbidden', 'You do not have permission to access this resource.', {}, 403);
+    this.name = 'ForbiddenError';
+  }
+}

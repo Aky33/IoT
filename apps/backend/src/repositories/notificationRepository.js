@@ -31,37 +31,14 @@ export const notificationRepository = {
     };
   },
 
-  async findByCaregiver(caregiverId, pageInfo) {
+  async findByFilter(filter, pageInfo) {
     const { page, pageSize, skip } = normalizePageInfo(pageInfo);
-    const filter = { caregiverId };
     const [items, total] = await Promise.all([
-      Notification.find(filter).skip(skip).limit(pageSize).sort({ createdAt: -1 }),
-      Notification.countDocuments(filter),
-    ]);
-    return {
-      data: items.map((d) => d.toJSON()),
-      meta: { page, pageSize, total },
-    };
-  },
-
-  async findByUser(userId, pageInfo) {
-    const { page, pageSize, skip } = normalizePageInfo(pageInfo);
-    const filter = { userId };
-    const [items, total] = await Promise.all([
-      Notification.find(filter).skip(skip).limit(pageSize).sort({ createdAt: -1 }),
-      Notification.countDocuments(filter),
-    ]);
-    return {
-      data: items.map((d) => d.toJSON()),
-      meta: { page, pageSize, total },
-    };
-  },
-
-  async findByDevice(deviceId, pageInfo) {
-    const { page, pageSize, skip } = normalizePageInfo(pageInfo);
-    const filter = { deviceId };
-    const [items, total] = await Promise.all([
-      Notification.find(filter).skip(skip).limit(pageSize).sort({ createdAt: -1 }),
+      Notification.find(filter)
+        .populate('deviceId', 'name')
+        .skip(skip)
+        .limit(pageSize)
+        .sort({ createdAt: -1 }),
       Notification.countDocuments(filter),
     ]);
     return {
