@@ -46,7 +46,7 @@ export function createApp() {
   // --- Caregiver / Admin (JWT auth) ---
   app.use('/notifications', authenticate, authorize('caregiver', 'admin'), notificationListRouter);
   app.use('/invitations', authenticate, authorize('admin'), invitationsRouter);
-  app.use('/users', authenticate, authorize('admin'), usersRouter);
+  app.use('/users', authenticate, authorize('admin', 'caregiver'), usersRouter);
   app.use('/caregivers', authenticate, authorize('admin'), caregiversRouter);
   app.use('/devices', authenticate, authorize('admin', 'caregiver'), devicesRouter);
 
