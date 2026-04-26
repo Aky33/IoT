@@ -25,12 +25,11 @@ describe('device route authorization', () => {
     expect(res.status).not.toBe(403);
   });
 
-  it('caregiver can access GET /devices/get/:id', async () => {
+  it('caregiver is not blocked by authorize on GET /devices/get/:id', async () => {
     const app = createTestApp('caregiver', 'caregiver-1');
-    const res = await request(app).get('/devices/get/507f1f77bcf86cd799439011').timeout(3000).catch((err) => err.response ?? err);
-    const status = res.status ?? (res.code === 'ECONNABORTED' ? 503 : res.status);
-    expect(status).not.toBe(403);
-  }, 15000);
+    const res = await request(app).get('/devices/get/invalid-id');
+    expect(res.status).not.toBe(403);
+  });
 
   it('caregiver is blocked from POST /devices/create', async () => {
     const app = createTestApp('caregiver', 'caregiver-1');
