@@ -51,6 +51,19 @@ export const deviceRepository = {
     };
   },
 
+  async findByCaregiver(caregiverId, pageInfo) {
+    const { page, pageSize, skip } = normalizePageInfo(pageInfo);
+    const filter = { caregiverId, isActive: true };
+    const [items, total] = await Promise.all([
+      Device.find(filter).skip(skip).limit(pageSize).sort({ createdAt: -1 }),
+      Device.countDocuments(filter),
+    ]);
+    return {
+      data: items.map((d) => d.toJSON()),
+      meta: { page, pageSize, total },
+    };
+  },
+
   async update(id, data) {
     const doc = await Device.findOneAndUpdate({ _id: id, isActive: true }, data, {
       new: true,
