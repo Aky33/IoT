@@ -30,6 +30,7 @@ const deviceSchema = new Schema(
     },
     firmwareVersion: { type: String },
     lastSeenAt: { type: Date },
+    deviceSecret: { type: String, required: true, select: false },
     isActive: { type: Boolean, default: true, index: true },
   },
   { timestamps: true },

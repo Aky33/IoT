@@ -27,11 +27,13 @@ Detail (env proměnné, porty, troubleshooting) v [apps/backend/docs/setup-guide
 Repo-level:
 
 - [docs/git-workflow.md](docs/git-workflow.md) — branching (Conventional Branch), commit messages (Conventional Commits), pull requesty
+- [docs/iot-architecture.md](docs/iot-architecture.md) — IoT Node (HARDWARIO), Gateway (Node-RED/Playground), komunikace, downsampling, cloud sync
 
 Backend-specific:
 
 - [apps/backend/docs/setup-guide.md](apps/backend/docs/setup-guide.md) — setup, denní příkazy, env proměnné, porty, troubleshooting
 - [apps/backend/docs/project-structure.md](apps/backend/docs/project-structure.md) — rozpis vrstev, tok requestu, response shapes, pojmenování
+- [apps/backend/docs/auth-guide.md](apps/backend/docs/auth-guide.md) — autentizace (JWT + HMAC), registrace s pozvánkami, onboarding flow, Insomnia testování
 
 ## Struktura repozitáře
 

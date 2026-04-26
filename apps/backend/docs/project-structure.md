@@ -64,13 +64,13 @@ Definice URL cest a HTTP metod, zřetězení middleware → controller. Jeden so
 
 URL vzor per resource:
 
-| Metoda | URL                       | Akce                      |
-| ------ | ------------------------- | ------------------------- |
-| POST   | `/<resource>/create`      | create                    |
-| GET    | `/<resource>/all`         | list (`?page=&pageSize=`) |
-| GET    | `/<resource>/get/:id`     | read                      |
-| PUT    | `/<resource>/edit/:id`    | update                    |
-| DELETE | `/<resource>/delete/:id`  | soft delete (204)         |
+| Metoda | URL                      | Akce                      |
+| ------ | ------------------------ | ------------------------- |
+| POST   | `/<resource>/create`     | create                    |
+| GET    | `/<resource>/all`        | list (`?page=&pageSize=`) |
+| GET    | `/<resource>/get/:id`    | read                      |
+| PUT    | `/<resource>/edit/:id`   | update                    |
+| DELETE | `/<resource>/delete/:id` | soft delete (204)         |
 
 ### [src/controllers/](../src/controllers/) — HTTP handlers
 
