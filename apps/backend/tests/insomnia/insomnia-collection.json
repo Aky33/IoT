@@ -213,6 +213,40 @@
       "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
     },
     {
+      "_id": "req_get_caregiver",
+      "_type": "request",
+      "parentId": "fld_caregivers",
+      "name": "Get Caregiver",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/caregivers/get/{{ _.caregiverId }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
+      "_id": "req_edit_caregiver",
+      "_type": "request",
+      "parentId": "fld_caregivers",
+      "name": "Edit Caregiver",
+      "method": "PUT",
+      "url": "{{ _.baseUrl }}/caregivers/edit/{{ _.caregiverId }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstName\": \"Eva\",\n  \"lastName\": \"Svobodová\",\n  \"email\": \"eva@example.com\",\n  \"phone\": \"+420111222333\"\n}"
+      }
+    },
+    {
+      "_id": "req_delete_caregiver",
+      "_type": "request",
+      "parentId": "fld_caregivers",
+      "name": "Delete Caregiver (soft)",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/caregivers/delete/{{ _.caregiverId }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
       "_id": "fld_devices",
       "_type": "request_group",
       "parentId": "wrk_iot",
@@ -242,6 +276,40 @@
       "name": "List Devices",
       "method": "GET",
       "url": "{{ _.baseUrl }}/devices/all?page=1&pageSize=10",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
+      "_id": "req_get_device",
+      "_type": "request",
+      "parentId": "fld_devices",
+      "name": "Get Device",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/devices/get/{{ _.deviceId }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
+    },
+    {
+      "_id": "req_edit_device",
+      "_type": "request",
+      "parentId": "fld_devices",
+      "name": "Edit Device",
+      "method": "PUT",
+      "url": "{{ _.baseUrl }}/devices/edit/{{ _.deviceId }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Tlačítko kuchyň\"\n}"
+      }
+    },
+    {
+      "_id": "req_delete_device",
+      "_type": "request",
+      "parentId": "fld_devices",
+      "name": "Delete Device (soft)",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/devices/delete/{{ _.deviceId }}",
       "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
     },
     {
