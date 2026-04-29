@@ -11,11 +11,6 @@ function normalizePageInfo({ page = 1, pageSize = DEFAULT_PAGE_SIZE } = {}) {
 }
 
 export const caregiverRepository = {
-  async create(data) {
-    const doc = await Caregiver.create(data);
-    return doc.toJSON();
-  },
-
   async findById(id) {
     const doc = await Caregiver.findOne({ _id: id, isActive: true });
     return doc ? doc.toJSON() : null;

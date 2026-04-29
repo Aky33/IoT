@@ -187,23 +187,6 @@
       "name": "3. Caregivers (admin)"
     },
     {
-      "_id": "req_create_caregiver",
-      "_type": "request",
-      "parentId": "fld_caregivers",
-      "name": "Create Caregiver",
-      "method": "POST",
-      "url": "{{ _.baseUrl }}/caregivers/create",
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
-      ],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"firstName\": \"Eva\",\n  \"lastName\": \"Svobodová\",\n  \"email\": \"eva@example.com\",\n  \"phone\": \"+420987654321\"\n}"
-      },
-      "afterResponseScript": "const body = insomnia.response.json();\nif (body.id) {\n  insomnia.environment.set('caregiverId', body.id);\n}"
-    },
-    {
       "_id": "req_list_caregivers",
       "_type": "request",
       "parentId": "fld_caregivers",

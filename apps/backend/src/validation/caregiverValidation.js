@@ -1,24 +1,3 @@
-export const createCaregiverSchema = {
-  type: 'object',
-  properties: {
-    firstName: { type: 'string', maxLength: 50 },
-    lastName: { type: 'string', maxLength: 50 },
-    email: { type: 'string', maxLength: 255 },
-    phone: { type: 'string', maxLength: 20 },
-    fcmToken: { type: 'string' },
-    notificationPreferences: {
-      type: 'object',
-      properties: {
-        sound: { type: 'boolean' },
-        vibration: { type: 'boolean' },
-        doNotDisturb: { type: 'boolean' },
-      },
-    },
-  },
-  required: ['firstName', 'lastName', 'email'],
-  additionalProperties: false,
-};
-
 export const updateCaregiverSchema = {
   type: 'object',
   properties: {
