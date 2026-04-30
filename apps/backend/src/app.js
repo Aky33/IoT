@@ -44,11 +44,11 @@ export function createApp() {
   app.use('/auth', authRateLimit, authRouter);
 
   // --- IoT Device (HMAC auth) ---
-  app.use('/notifications', notificationsRateLimit, authenticateDevice, notificationCreateRouter);
+  app.use('/notifications/create', notificationsRateLimit, authenticateDevice, notificationCreateRouter);
 
   // --- Caregiver / Admin (JWT auth) ---
-  app.use('/notifications', authenticate, authorize('caregiver', 'admin'), notificationListRouter);
   app.use('/notifications/stream', authenticate, authorize('caregiver'), sseHandler);
+  app.use('/notifications', authenticate, authorize('caregiver', 'admin'), notificationListRouter);
   app.use('/push', authenticate, authorize('caregiver', 'admin'), pushRouter);
   app.use('/invitations', authenticate, authorize('admin'), invitationsRouter);
   app.use('/users', authenticate, authorize('admin', 'caregiver'), usersRouter);
