@@ -94,7 +94,7 @@
         "mimeType": "application/json",
         "text": "{\n  \"ttlHours\": 24\n}"
       },
-      "afterResponseScript": "const body = insomnia.response.json();\nif (body.code) {\n  insomnia.environment.set('invitationCode', body.code);\n}"
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body.code) {\n  insomnia.environment.set('invitationCode', body.code);\n}\nif (body.id) {\n  insomnia.environment.set('invitationId', body.id);\n}"
     },
     {
       "_id": "req_list_invitations",
@@ -111,7 +111,7 @@
       "parentId": "fld_invitations",
       "name": "Revoke Invitation",
       "method": "DELETE",
-      "url": "{{ _.baseUrl }}/invitations/revoke/REPLACE_WITH_INVITATION_ID",
+      "url": "{{ _.baseUrl }}/invitations/revoke/{{ _.invitationId }}",
       "headers": [{ "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }]
     },
     {
@@ -344,6 +344,62 @@
       "headers": [
         { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
       ]
+    },
+    {
+      "_id": "fld_push",
+      "_type": "request_group",
+      "parentId": "wrk_iot",
+      "name": "6. Push & SSE"
+    },
+    {
+      "_id": "req_vapid_public_key",
+      "_type": "request",
+      "parentId": "fld_push",
+      "name": "Get VAPID Public Key",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/push/vapid-public-key",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_push_subscribe",
+      "_type": "request",
+      "parentId": "fld_push",
+      "name": "Push Subscribe",
+      "description": "Saves a Web Push subscription for the authenticated caregiver. In real use, the subscription object comes from PushManager.subscribe() in the browser.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/push/subscribe",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"endpoint\": \"https://fcm.googleapis.com/fcm/send/test-subscription\",\n  \"keys\": {\n    \"p256dh\": \"test-p256dh-key\",\n    \"auth\": \"test-auth-key\"\n  }\n}"
+      }
+    },
+    {
+      "_id": "req_push_unsubscribe",
+      "_type": "request",
+      "parentId": "fld_push",
+      "name": "Push Unsubscribe",
+      "description": "Removes the push subscription for the authenticated caregiver.",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/push/unsubscribe",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.accessToken }}" }
+      ]
+    },
+    {
+      "_id": "req_sse_stream",
+      "_type": "request",
+      "parentId": "fld_push",
+      "name": "SSE Notification Stream",
+      "description": "Server-Sent Events stream for real-time notifications. Keeps connection open. Use token query param because EventSource doesn't support custom headers.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/notifications/stream?token={{ _.accessToken }}",
+      "headers": []
     },
     {
       "_id": "fld_health",
