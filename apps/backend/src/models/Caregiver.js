@@ -25,7 +25,13 @@ const caregiverSchema = new Schema(
       type: [{ token: String, expiresAt: Date, _id: false }],
       select: false,
     },
-    fcmToken: { type: String },
+    pushSubscription: {
+      endpoint: { type: String },
+      keys: {
+        p256dh: { type: String },
+        auth: { type: String },
+      },
+    },
     notificationPreferences: {
       sound: { type: Boolean, default: true },
       vibration: { type: Boolean, default: true },

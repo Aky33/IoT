@@ -5,7 +5,19 @@ export const updateCaregiverSchema = {
     lastName: { type: 'string', maxLength: 50 },
     email: { type: 'string', maxLength: 255 },
     phone: { type: 'string', maxLength: 20 },
-    fcmToken: { type: 'string' },
+    pushSubscription: {
+      type: 'object',
+      properties: {
+        endpoint: { type: 'string' },
+        keys: {
+          type: 'object',
+          properties: {
+            p256dh: { type: 'string' },
+            auth: { type: 'string' },
+          },
+        },
+      },
+    },
     notificationPreferences: {
       type: 'object',
       properties: {
