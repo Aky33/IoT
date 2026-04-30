@@ -1,60 +1,60 @@
-# Authentication & Authorization — Frontend Integration Guide
+# Autentizace a autorizace — Návod pro frontend
 
-## Overview
+## Přehled
 
-The backend uses two authentication mechanisms:
+Backend používá dva autentizační mechanismy:
 
-| Mechanism | Who uses it | How it works |
-|-----------|-------------|--------------|
-| **JWT (Bearer token)** | Caregivers, Admins | Access token in header + refresh token in httpOnly cookie |
-| **HMAC-SHA256** | IoT gateway | Device ID + timestamp + signature in headers |
+| Mechanismus | Kdo ho používá | Jak funguje |
+|-------------|---------------|-------------|
+| **JWT (Bearer token)** | Pečovatelé, Admini | Access token v hlavičce + refresh token v httpOnly cookie |
+| **HMAC-SHA256** | IoT gateway | Device ID + timestamp + podpis v hlavičkách |
 
-Frontend only needs to implement **JWT authentication**.
+Frontend implementuje pouze **JWT autentizaci**. HMAC je záležitost gateway.
 
-## Roles
+## Role
 
-| Role | Description | Created via |
-|------|-------------|-------------|
-| `admin` | Full system access — manage users, caregivers, devices, invitations | Seed script or invitation with `role: "admin"` |
-| `caregiver` | View own devices, notifications, and linked patients | Registration with invitation code |
+| Role | Popis | Jak vzniká |
+|------|-------|------------|
+| `admin` | Plný přístup — správa uživatelů, pečovatelů, zařízení, pozvánek | Seed script nebo invitation s `role: "admin"` |
+| `caregiver` | Vidí svá zařízení, notifikace a přiřazené pacienty | Registrace s invitation kódem |
 
-## JWT Token Lifecycle
+## Životní cyklus JWT tokenů
 
 ```
 Login/Register
      ↓
-Access Token (15 min) + Refresh Token Cookie (7 days)
-     ↓ (access token expires)
-POST /auth/refresh → new access token + new refresh cookie
-     ↓ (refresh token expires after 7 days)
-Must log in again
+Access token (15 min) + Refresh token cookie (7 dní)
+     ↓ (access token vyprší)
+POST /auth/refresh → nový access token + nový refresh cookie
+     ↓ (refresh token vyprší po 7 dnech)
+Uživatel se musí znovu přihlásit
 ```
 
-### Access Token
+### Access token
 
-- Short-lived (default 15 minutes)
-- Sent in `Authorization` header: `Bearer <token>`
-- Contains: `sub` (caregiver ID), `email`, `role`
-- **Never stored in localStorage** (XSS risk) — use in-memory variable
+- Krátkodobý (výchozí 15 minut)
+- Posílá se v hlavičce: `Authorization: Bearer <token>`
+- Obsahuje: `sub` (ID caregivera), `email`, `role`
+- **Nikdy neukládat do localStorage** (riziko XSS) — uchovávat v paměti (proměnná)
 
-### Refresh Token
+### Refresh token
 
-- Long-lived (7 days)
-- Stored as **httpOnly secure cookie** — JavaScript cannot access it
-- Automatically sent with requests to `/auth/*` endpoints
-- **Rotated on every refresh** — old token invalidated, new one issued
-- **Reuse detection** — if someone uses an old rotated token, ALL sessions are revoked
+- Dlouhodobý (7 dní)
+- Uložen jako **httpOnly secure cookie** — JavaScript k němu nemá přístup
+- Automaticky se posílá s požadavky na `/auth/*`
+- **Rotuje se při každém refreshi** — starý token se zneplatní, vydá se nový
+- **Detekce zneužití** — pokud někdo použije starý (rotovaný) token, VŠECHNY sessions se zruší
 
-## Implementation
+## Implementace
 
-### 1. Login
+### 1. Přihlášení
 
 ```js
 async function login(email, password) {
   const res = await fetch('/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // IMPORTANT: sends/receives cookies
+    credentials: 'include', // DŮLEŽITÉ: odesílá a přijímá cookies
     body: JSON.stringify({ email, password }),
   });
 
@@ -64,12 +64,12 @@ async function login(email, password) {
   }
 
   const { accessToken } = await res.json();
-  // Store in memory (not localStorage)
+  // Uložit do paměti (NE do localStorage)
   setAccessToken(accessToken);
 }
 ```
 
-### 2. Registration
+### 2. Registrace
 
 ```js
 async function register(data) {
@@ -89,10 +89,10 @@ async function register(data) {
 
   if (!res.ok) {
     const { error } = await res.json();
-    // Handle specific errors:
-    // error.code === 'invitationInvalid' → invalid code
-    // error.code === 'emailTaken' → email already exists
-    // error.code === 'weakPassword' → password too short
+    // Zpracování konkrétních chyb:
+    // error.code === 'invitationInvalid' → neplatný kód
+    // error.code === 'emailTaken' → email již existuje
+    // error.code === 'weakPassword' → heslo příliš krátké
     throw new Error(error.message);
   }
 
@@ -102,7 +102,7 @@ async function register(data) {
 }
 ```
 
-### 3. Authenticated API Calls
+### 3. Volání chráněných endpointů
 
 ```js
 async function apiCall(url, options = {}) {
@@ -116,11 +116,11 @@ async function apiCall(url, options = {}) {
     },
   });
 
-  // Access token expired — try refresh
+  // Access token vypršel — zkusit refresh
   if (res.status === 401) {
     const refreshed = await refreshToken();
     if (refreshed) {
-      // Retry with new token
+      // Zopakovat požadavek s novým tokenem
       return fetch(url, {
         ...options,
         credentials: 'include',
@@ -131,7 +131,7 @@ async function apiCall(url, options = {}) {
         },
       });
     }
-    // Refresh failed — redirect to login
+    // Refresh selhal — přesměrovat na login
     redirectToLogin();
     return;
   }
@@ -140,17 +140,17 @@ async function apiCall(url, options = {}) {
 }
 ```
 
-### 4. Token Refresh
+### 4. Obnova tokenu (refresh)
 
 ```js
 async function refreshToken() {
   const res = await fetch('/auth/refresh', {
     method: 'POST',
-    credentials: 'include', // sends refreshToken cookie
+    credentials: 'include', // posílá refreshToken cookie
   });
 
   if (!res.ok) {
-    // Refresh failed — token expired or reuse detected
+    // Refresh selhal — token expiroval nebo detekce zneužití
     setAccessToken(null);
     return false;
   }
@@ -161,21 +161,21 @@ async function refreshToken() {
 }
 ```
 
-### 5. Automatic Refresh (Interceptor Pattern)
+### 5. Automatický refresh (interceptor)
 
-Set up a timer or interceptor to refresh before expiry:
+Nastavte časovač pro obnovu tokenu před jeho expirací:
 
 ```js
-// Decode JWT to get expiry (without verification — just reading)
+// Dekódování JWT pro získání expirace (bez ověření — pouze čtení)
 function getTokenExpiry(token) {
   const payload = JSON.parse(atob(token.split('.')[1]));
-  return payload.exp * 1000; // convert to ms
+  return payload.exp * 1000; // převod na ms
 }
 
-// Refresh 1 minute before expiry
+// Refresh 1 minutu před expirací
 function scheduleRefresh(token) {
   const expiry = getTokenExpiry(token);
-  const refreshAt = expiry - 60_000; // 1 min before
+  const refreshAt = expiry - 60_000; // 1 min předem
   const delay = refreshAt - Date.now();
 
   if (delay > 0) {
@@ -189,21 +189,21 @@ function scheduleRefresh(token) {
 }
 ```
 
-### 6. Logout
+### 6. Odhlášení
 
 ```js
 async function logout() {
-  // Close SSE connection if open
+  // Zavřít SSE spojení (pokud je otevřené)
   if (sseSource) sseSource.close();
 
-  // Unsubscribe from push
+  // Odhlásit push notifikace
   await fetch('/push/unsubscribe', {
     method: 'DELETE',
     credentials: 'include',
     headers: { 'Authorization': `Bearer ${getAccessToken()}` },
   });
 
-  // Logout (clears refresh cookie)
+  // Odhlásit se (smaže refresh cookie)
   await fetch('/auth/logout', {
     method: 'POST',
     credentials: 'include',
@@ -214,98 +214,97 @@ async function logout() {
 }
 ```
 
-## Authorization — What Each Role Can Do
+## Autorizace — co může která role
 
 ### Admin
 
-| Resource | Create | List | Get | Edit | Delete |
-|----------|--------|------|-----|------|--------|
-| Users (patients) | yes | yes | yes | yes | yes |
-| Caregivers | via invitation | yes | yes | yes | yes |
-| Devices | yes | yes (all) | yes (all) | yes | yes |
-| Invitations | yes | yes | - | - | yes (revoke) |
-| Notifications | - | yes (own) | - | - | - |
-| Push subscription | yes | - | VAPID key | yes (unsub) | - |
+| Zdroj | Vytvořit | Seznam | Detail | Editovat | Smazat |
+|-------|----------|--------|--------|----------|--------|
+| Uživatelé (pacienti) | ano | ano | ano | ano | ano |
+| Pečovatelé | přes invitation | ano | ano | ano | ano |
+| Zařízení | ano | ano (vše) | ano (vše) | ano | ano |
+| Pozvánky | ano | ano | - | - | ano |
+| Notifikace | - | ano (své) | - | - | - |
+| Push subscription | ano | - | VAPID klíč | ano | - |
 
-### Caregiver
+### Caregiver (pečovatel)
 
-| Resource | Create | List | Get | Edit | Delete |
-|----------|--------|------|-----|------|--------|
-| Users (patients) | no | no | own only | no | no |
-| Caregivers | - | no | no | no | no |
-| Devices | no | own only | own only | no | no |
-| Invitations | no | no | - | - | no |
-| Notifications | - | own only | - | - | - |
-| Push subscription | yes | - | VAPID key | yes (unsub) | - |
-| SSE stream | yes | - | - | - | - |
+| Zdroj | Vytvořit | Seznam | Detail | Editovat | Smazat |
+|-------|----------|--------|--------|----------|--------|
+| Uživatelé (pacienti) | ne | ne | jen své | ne | ne |
+| Pečovatelé | - | ne | ne | ne | ne |
+| Zařízení | ne | jen svá | jen svá | ne | ne |
+| Pozvánky | ne | ne | - | - | ne |
+| Notifikace | - | jen své | - | - | - |
+| Push subscription | ano | - | VAPID klíč | ano | - |
+| SSE stream | ano | - | - | - | - |
 
-"Own only" means:
-- **Devices:** filtered by `caregiverId` matching the authenticated user
-- **Users:** accessible only if the caregiver has a device linked to that user
-- **Notifications:** filtered by `caregiverId`
+"Jen své" znamená:
+- **Zařízení:** filtrováno podle `caregiverId` přihlášeného uživatele
+- **Uživatelé:** přístupné pouze pokud pečovatel má zařízení přiřazené k danému uživateli
+- **Notifikace:** filtrováno podle `caregiverId`
 
-### Handling 403 Forbidden in Frontend
+### Rozlišení 401 vs 403 na frontendu
 
 ```js
+if (res.status === 401) {
+  // Neautentizovaný → zkusit refresh, pak přesměrovat na login
+}
+
 if (res.status === 403) {
-  // User doesn't have permission
-  // Show "Access denied" message
-  // Don't redirect to login — they ARE authenticated, just not authorized
+  // Neautorizovaný → zobrazit "Přístup odepřen"
+  // NEPŘESMĚROVÁVAT na login — uživatel JE přihlášen, nemá oprávnění
 }
 ```
 
-## Security Best Practices
+## Konfigurace refresh cookie
 
-1. **Never store access tokens in localStorage** — vulnerable to XSS. Use in-memory variable.
-2. **Always use `credentials: 'include'`** — required for cookies to be sent/received.
-3. **Handle 401 vs 403 differently:**
-   - 401 = not authenticated → try refresh, then redirect to login
-   - 403 = not authorized → show "access denied", don't redirect
-4. **Decode JWT client-side only for UI** (display role, schedule refresh) — never trust it for authorization decisions.
-5. **Clear all state on logout** — access token, SSE connection, push subscription.
+| Vlastnost | Hodnota | Účel |
+|-----------|---------|------|
+| `httpOnly` | `true` | JavaScript nemá přístup (ochrana proti XSS) |
+| `secure` | `true` v produkci | Odesílá se pouze přes HTTPS |
+| `sameSite` | `strict` | Neodesílá se při cross-site požadavcích (ochrana proti CSRF) |
+| `path` | `/auth` | Odesílá se pouze na auth endpointy |
+| `maxAge` | 7 dní | Automatická expirace |
 
-## Cookie Configuration
+## Bezpečnostní doporučení
 
-The refresh token cookie has these flags:
+1. **Nikdy neukládat access token do localStorage** — zranitelné vůči XSS. Používat proměnnou v paměti.
+2. **Vždy používat `credentials: 'include'`** — nutné pro odesílání a přijímání cookies.
+3. **Rozlišovat 401 a 403** — 401 = neautentizovaný (refresh/login), 403 = neautorizovaný (zobrazit hlášku).
+4. **JWT dekódovat na klientu pouze pro UI** (zobrazení role, plánování refreshe) — nikdy na něm nezakládat autorizační rozhodnutí.
+5. **Při odhlášení vyčistit vše** — access token, SSE spojení, push subscription.
 
-| Flag | Value | Purpose |
-|------|-------|---------|
-| `httpOnly` | `true` | JavaScript cannot access it (XSS protection) |
-| `secure` | `true` in production | Only sent over HTTPS |
-| `sameSite` | `strict` | Not sent in cross-site requests (CSRF protection) |
-| `path` | `/auth` | Only sent to auth endpoints |
-| `maxAge` | 7 days | Auto-expires |
-
-## Error Handling Quick Reference
+## Zpracování chyb — rychlý přehled
 
 ```js
 switch (error.code) {
   case 'unauthorized':
   case 'tokenExpired':
   case 'tokenInvalid':
-    // Try refresh, then redirect to login
+    // Zkusit refresh, pak přesměrovat na login
     break;
   case 'refreshTokenReuse':
-    // Security event — force immediate login
-    // All sessions were revoked
+    // Bezpečnostní událost — vynutit okamžité přihlášení
+    // Všechny sessions byly zrušeny
     break;
   case 'forbidden':
-    // Show "Access denied" — user is logged in but lacks permission
+    // Zobrazit "Přístup odepřen" — uživatel je přihlášen, ale nemá oprávnění
     break;
   case 'invalidCredentials':
-    // Show "Wrong email or password"
+    // Zobrazit "Nesprávný email nebo heslo"
     break;
   case 'invitationInvalid':
-    // Show "Invalid invitation code"
+    // Zobrazit "Neplatný invitation kód"
     break;
   case 'emailTaken':
-    // Show "Email already registered"
+    // Zobrazit "Email je již zaregistrován"
     break;
   case 'weakPassword':
-    // Show "Password must be at least 8 characters"
+    // Zobrazit "Heslo musí mít alespoň 8 znaků"
     break;
   case 'rateLimitExceeded':
-    // Show "Too many attempts, try again later"
+    // Zobrazit "Příliš mnoho pokusů, zkuste to později"
     break;
 }
 ```

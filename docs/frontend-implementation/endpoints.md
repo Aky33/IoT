@@ -1,27 +1,30 @@
-# API Endpoints — Frontend Integration Guide
+# API Endpointy — Referenční dokumentace
 
-## Base URL
+Tento dokument slouží jako:
+1. **Podklad pro kolegy** — přepis do školního portálu (Command List, dtoIn/dtoOut, validace, sequence, seznam chyb)
+2. **Návod pro frontend** — jak endpointy volat, jaké hlavičky posílat, co očekávat v odpovědi
+
+## Základní URL
 
 ```
 http://localhost:3000  (development)
 ```
 
-## Response Format
+## Formát odpovědí
 
-All responses use consistent JSON format:
+Všechny odpovědi používají konzistentní JSON formát:
+- MongoDB `_id` se přejmenuje na `id` (string)
+- Pole `__v` se odstraní
+- Časová razítka jsou ve formátu ISO 8601
 
-- `_id` is renamed to `id` (string)
-- MongoDB `__v` field is removed
-- Timestamps are ISO 8601 strings
+### Úspěšná odpověď — jeden objekt
 
-### Success responses
-
-Single object:
 ```json
 { "id": "...", "firstName": "...", ... }
 ```
 
-Paginated list:
+### Úspěšná odpověď — stránkovaný seznam
+
 ```json
 {
   "data": [ ... ],
@@ -29,556 +32,868 @@ Paginated list:
 }
 ```
 
-### Error responses
+### Chybová odpověď
 
 ```json
 {
   "error": {
     "code": "errorCode",
-    "message": "Human-readable message.",
+    "message": "Lidsky čitelná zpráva.",
     "details": {}
   }
 }
 ```
 
-## Pagination
+## Stránkování
 
-Endpoints returning lists accept query parameters:
+Endpointy vracející seznamy přijímají query parametry:
 
-| Parameter | Default | Max | Description |
-|-----------|---------|-----|-------------|
-| `page` | 1 | - | Page number (min 1) |
-| `pageSize` | 50 | 200 | Items per page |
+| Parametr | Výchozí | Max | Popis |
+|----------|---------|-----|-------|
+| `page` | 1 | - | Číslo stránky (min 1) |
+| `pageSize` | 50 | 200 | Počet položek na stránku |
 
-Example: `GET /devices/all?page=2&pageSize=10`
-
----
-
-## Endpoint Reference
-
-### Health
-
-#### GET /health
-
-Public endpoint. No authentication required.
-
-**Response (200 / 503):**
-```json
-{
-  "status": "ok",
-  "db": "connected",
-  "timestamp": "2026-04-29T10:00:00.000Z"
-}
-```
+Příklad: `GET /devices/all?page=2&pageSize=10`
 
 ---
 
-### Auth
+## Přehled endpointů (Command List)
 
-All auth endpoints are rate-limited to **20 requests per 15 minutes** per IP.
+| Command | HTTP | Popis | Application profiles |
+|---------|------|-------|---------------------|
+| `/auth/register` | POST | Registrace pečující osoby (s invitation kódem) | public |
+| `/auth/login` | POST | Přihlášení (vrátí JWT) | public |
+| `/auth/refresh` | POST | Obnovení access tokenu | authenticated |
+| `/auth/logout` | POST | Odhlášení (zneplatnění refresh tokenu) | authenticated |
+| `/users/create` | POST | Vytvoří model uživatel | admin |
+| `/users/all` | GET | Navrátí všechny modely uživatel | admin |
+| `/users/get/{id}` | GET | Navrátí konkrétní model uživatel | admin, caregiver |
+| `/users/edit/{id}` | PUT | Zedituje konkrétní model uživatel | admin |
+| `/users/delete/{id}` | DELETE | Smaže konkrétní model uživatel | admin |
+| `/caregivers/all` | GET | Navrátí všechny modely pečující osoby | admin |
+| `/caregivers/get/{id}` | GET | Navrátí konkrétní model pečující osoby | admin |
+| `/caregivers/edit/{id}` | PUT | Zedituje konkrétní model pečující osoby | admin |
+| `/caregivers/delete/{id}` | DELETE | Smaže konkrétní model pečující osoby | admin |
+| `/devices/create` | POST | Vytvoří model zařízení | admin |
+| `/devices/all` | GET | Navrátí modely zařízení | admin, caregiver |
+| `/devices/get/{id}` | GET | Navrátí konkrétní model zařízení | admin, caregiver |
+| `/devices/edit/{id}` | PUT | Zedituje konkrétní model zařízení | admin |
+| `/devices/delete/{id}` | DELETE | Smaže konkrétní model zařízení | admin |
+| `/notifications/create` | POST | Vytvoří model notifikace | device |
+| `/notifications/all` | GET | Navrátí notifikace přihlášeného pečovatele | admin, caregiver |
+| `/notifications/stream` | GET | SSE stream notifikací v reálném čase | caregiver |
+| `/invitations/create` | POST | Vytvoří pozvánku | admin |
+| `/invitations/all` | GET | Navrátí všechny pozvánky | admin |
+| `/invitations/revoke/{id}` | DELETE | Zruší (smaže) pozvánku | admin |
+| `/push/subscribe` | POST | Uloží push subscription | caregiver, admin |
+| `/push/unsubscribe` | DELETE | Odstraní push subscription | caregiver, admin |
+| `/push/vapid-public-key` | GET | Vrátí VAPID veřejný klíč | caregiver, admin |
 
-#### POST /auth/register
+---
 
-Register a new caregiver with an invitation code.
+## Detailní dokumentace endpointů
 
-**Request:**
-```json
-{
-  "firstName": "Marie",
-  "lastName": "Nováková",
-  "email": "marie@example.com",
-  "password": "securePass123",
-  "phone": "+420123456789",
-  "invitationCode": "A1B2C3D4"
-}
+---
+
+### POST /auth/register
+
+**Popis:** Registrace nové pečující osoby s invitation kódem.
+
+**Rate limit:** 20 požadavků / 15 minut
+
+**Vstup (dtoIn):**
+```js
+const dtoIn = {
+  firstName: "Marie",
+  lastName: "Nováková",
+  email: "marie@example.com",
+  password: "securePass123",
+  phone: "+420123456789",
+  invitationCode: "A1B2C3D4"
+};
 ```
 
-| Field | Required | Notes |
-|-------|----------|-------|
-| `firstName` | yes | |
-| `lastName` | yes | |
-| `email` | yes | Must be unique, auto-lowercased |
-| `password` | yes | Min 8 characters |
-| `phone` | no | |
-| `invitationCode` | yes | 8-char hex code from admin |
+| Pole | Typ | Povinné | Poznámka |
+|------|-----|---------|----------|
+| `firstName` | string | ano | |
+| `lastName` | string | ano | |
+| `email` | string | ano | Unikátní, automaticky lowercase |
+| `password` | string | ano | Min 8 znaků |
+| `phone` | string | ne | |
+| `invitationCode` | string | ano | 8znakový hex kód od admina |
 
-**Response (201):**
-```json
-{
-  "accessToken": "eyJ...",
-  "caregiver": {
-    "id": "...",
-    "firstName": "Marie",
-    "lastName": "Nováková",
-    "email": "marie@example.com",
-    "phone": "+420123456789",
-    "role": "caregiver",
-    "notificationPreferences": {
-      "sound": true,
-      "vibration": true,
-      "doNotDisturb": false
+**Výstup (dtoOut) — 201:**
+```js
+const dtoOut = {
+  accessToken: "eyJ...",
+  caregiver: {
+    id: "xxx",
+    firstName: "Marie",
+    lastName: "Nováková",
+    email: "marie@example.com",
+    phone: "+420123456789",
+    role: "caregiver",
+    notificationPreferences: {
+      sound: true,
+      vibration: true,
+      doNotDisturb: false
     },
-    "isActive": true,
-    "createdAt": "...",
-    "updatedAt": "..."
+    isActive: true,
+    createdAt: "2026-04-29T10:00:00.000Z",
+    updatedAt: "2026-04-29T10:00:00.000Z"
   }
-}
+};
 ```
 
-Also sets `refreshToken` httpOnly cookie.
+Také nastaví `refreshToken` jako httpOnly cookie.
 
-**Errors:**
-| Code | Status | Cause |
-|------|--------|-------|
-| `invitationRequired` | 400 | No invitation code provided |
-| `invitationInvalid` | 400 | Code is invalid, expired, or already used |
-| `weakPassword` | 400 | Password shorter than 8 characters |
-| `emailTaken` | 409 | Email already registered |
+**Použití na frontendu:**
+```js
+const res = await fetch('/auth/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify(dtoIn),
+});
+const { accessToken, caregiver } = await res.json();
+```
+
+**Seznam chyb:**
+
+| Typ | Kód | Zpráva | Status |
+|-----|-----|--------|--------|
+| Error | `invitationRequired` | Invitation code is required to register. | 400 |
+| Error | `invitationInvalid` | Invitation code is invalid, expired, or already used. | 400 |
+| Error | `weakPassword` | Password must be at least 8 characters. | 400 |
+| Error | `emailTaken` | A caregiver with this email already exists. | 409 |
 
 ---
 
-#### POST /auth/login
+### POST /auth/login
 
-**Request:**
-```json
-{
-  "email": "marie@example.com",
-  "password": "securePass123"
-}
+**Popis:** Přihlášení pečující osoby.
+
+**Rate limit:** 20 požadavků / 15 minut
+
+**Vstup (dtoIn):**
+```js
+const dtoIn = {
+  email: "marie@example.com",
+  password: "securePass123"
+};
 ```
 
-**Response (200):**
-```json
-{
-  "accessToken": "eyJ..."
-}
+**Výstup (dtoOut) — 200:**
+```js
+const dtoOut = {
+  accessToken: "eyJ..."
+};
 ```
 
-Also sets `refreshToken` httpOnly cookie.
+Také nastaví `refreshToken` jako httpOnly cookie.
 
-**Errors:**
-| Code | Status | Cause |
-|------|--------|-------|
-| `invalidCredentials` | 401 | Wrong email or password |
+**Použití na frontendu:**
+```js
+const res = await fetch('/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({ email, password }),
+});
+const { accessToken } = await res.json();
+```
+
+**Seznam chyb:**
+
+| Typ | Kód | Zpráva | Status |
+|-----|-----|--------|--------|
+| Error | `invalidCredentials` | Invalid email or password. | 401 |
 
 ---
 
-#### POST /auth/refresh
+### POST /auth/refresh
 
-No request body. Uses the `refreshToken` cookie automatically.
+**Popis:** Obnovení access tokenu pomocí refresh token cookie.
 
-**Response (200):**
-```json
-{
-  "accessToken": "eyJ..."
-}
+**Vstup:** Žádný body. Používá `refreshToken` cookie (posílá se automaticky).
+
+**Výstup (dtoOut) — 200:**
+```js
+const dtoOut = {
+  accessToken: "eyJ..."
+};
 ```
 
-Sets new `refreshToken` cookie (token rotation).
+Nastaví nový `refreshToken` cookie (rotace tokenu).
 
-**Errors:**
-| Code | Status | Cause |
-|------|--------|-------|
-| `noRefreshToken` | 401 | Cookie missing |
-| `refreshTokenInvalid` | 401 | Token expired or invalid |
-| `refreshTokenReuse` | 401 | Reuse detected — all sessions revoked |
+**Použití na frontendu:**
+```js
+const res = await fetch('/auth/refresh', {
+  method: 'POST',
+  credentials: 'include',
+});
+const { accessToken } = await res.json();
+```
+
+**Seznam chyb:**
+
+| Typ | Kód | Zpráva | Status |
+|-----|-----|--------|--------|
+| Error | `noRefreshToken` | Refresh token cookie is missing. | 401 |
+| Error | `refreshTokenInvalid` | Refresh token is invalid or expired. | 401 |
+| Error | `refreshTokenReuse` | Refresh token reuse detected. All sessions revoked. | 401 |
 
 ---
 
-#### POST /auth/logout
+### POST /auth/logout
 
-No request body.
+**Popis:** Odhlášení — smaže refresh token z DB a vymaže cookie.
 
-**Response:** 204 No Content
+**Vstup:** Žádný.
 
-Clears `refreshToken` cookie and removes token from DB.
-
----
-
-### Users (Patients)
-
-Users represent patients — people with IoT buttons. They do not log into the system.
-
-| Endpoint | Method | Role | Description |
-|----------|--------|------|-------------|
-| `/users/create` | POST | admin | Create a patient |
-| `/users/all` | GET | admin | List all patients |
-| `/users/get/:id` | GET | admin, caregiver | Get patient detail |
-| `/users/edit/:id` | PUT | admin | Update patient |
-| `/users/delete/:id` | DELETE | admin | Soft-delete patient |
-
-#### POST /users/create
-
-**Auth:** Bearer token (admin only)
-
-**Request:**
-```json
-{
-  "firstName": "Jan",
-  "lastName": "Novák",
-  "notes": "Diabetik, špatně slyší"
-}
-```
-
-| Field | Required | Max length |
-|-------|----------|------------|
-| `firstName` | yes | 50 |
-| `lastName` | yes | 50 |
-| `notes` | no | 500 |
-
-**Response (201):**
-```json
-{
-  "id": "...",
-  "firstName": "Jan",
-  "lastName": "Novák",
-  "notes": "Diabetik, špatně slyší",
-  "isActive": true,
-  "createdAt": "...",
-  "updatedAt": "..."
-}
-```
-
-#### GET /users/all
-
-**Auth:** Bearer token (admin only)
-
-**Query:** `?page=1&pageSize=10`
-
-**Response (200):** Paginated list of users.
-
-#### GET /users/get/:id
-
-**Auth:** Bearer token (admin or caregiver)
-
-Caregiver can only access users linked to their devices. Returns 403 if the caregiver has no device assigned to this user.
-
-**Response (200):** Single user object.
-
-#### PUT /users/edit/:id
-
-**Auth:** Bearer token (admin only)
-
-All fields optional (partial update):
-```json
-{
-  "notes": "Updated notes"
-}
-```
-
-#### DELETE /users/delete/:id
-
-**Auth:** Bearer token (admin only)
-
-Soft delete — sets `isActive: false`. **Response:** 204 No Content.
+**Výstup:** 204 No Content
 
 ---
 
-### Caregivers
+### POST /users/create
 
-| Endpoint | Method | Role | Description |
-|----------|--------|------|-------------|
-| `/caregivers/all` | GET | admin | List all caregivers |
-| `/caregivers/get/:id` | GET | admin | Get caregiver detail |
-| `/caregivers/edit/:id` | PUT | admin | Update caregiver |
-| `/caregivers/delete/:id` | DELETE | admin | Soft-delete caregiver |
+**Popis:** Vytvoří nového uživatele (pacienta).
 
-Caregivers are created via `/auth/register` with an invitation code. There is no direct create endpoint.
+**Autorizace:** JWT Bearer token, role `admin`
 
-#### GET /caregivers/all
-
-**Auth:** Bearer token (admin only)
-
-**Query:** `?page=1&pageSize=10`
-
-**Response (200):** Paginated list. Fields: `id`, `firstName`, `lastName`, `email`, `phone`, `role`, `notificationPreferences`, `isActive`, `createdAt`, `updatedAt`.
-
-Sensitive fields (`passwordHash`, `refreshTokens`, `pushSubscription`) are never returned.
-
-#### PUT /caregivers/edit/:id
-
-**Auth:** Bearer token (admin only)
-
-All fields optional:
-```json
-{
-  "firstName": "Eva",
-  "phone": "+420111222333",
-  "role": "admin",
-  "notificationPreferences": {
-    "doNotDisturb": true
-  }
-}
+**Vstup (dtoIn):**
+```js
+const dtoIn = {
+  firstName: "Jan",
+  lastName: "Novák",
+  notes: "Diabetik, špatně slyší"
+};
 ```
 
-Updatable fields: `firstName`, `lastName`, `email`, `phone`, `pushSubscription`, `notificationPreferences`, `isActive`, `role`.
+**Validační schéma (dtoInValidationSchema):**
+```js
+const dtoInValidationSchema = {
+  type: "object",
+  properties: {
+    firstName: { type: "string", maxLength: 50 },
+    lastName: { type: "string", maxLength: 50 },
+    notes: { type: "string", maxLength: 500 }
+  },
+  required: ["firstName", "lastName"],
+  additionalProperties: false
+};
+```
+
+**Výstup (dtoOut) — 201:**
+```js
+const dtoOut = {
+  id: "xxx",
+  firstName: "Jan",
+  lastName: "Novák",
+  notes: "Diabetik, špatně slyší",
+  isActive: true,
+  createdAt: "2026-04-29T10:00:00.000Z",
+  updatedAt: "2026-04-29T10:00:00.000Z"
+};
+```
+
+**Sequence:**
+1. Validace dtoIn podle dtoInValidationSchema
+2. Systém uloží předaný model do DB
+3. Vrátí dtoOut
+
+**Seznam chyb:**
+
+| Typ | Kód | Zpráva | Status |
+|-----|-----|--------|--------|
+| Error | `validationError` | Request body is invalid. | 400 |
+| Error | `forbidden` | You do not have permission. | 403 |
 
 ---
 
-### Devices
+### GET /users/all
 
-| Endpoint | Method | Role | Description |
-|----------|--------|------|-------------|
-| `/devices/create` | POST | admin | Create device |
-| `/devices/all` | GET | admin, caregiver | List devices |
-| `/devices/get/:id` | GET | admin, caregiver | Get device detail |
-| `/devices/edit/:id` | PUT | admin | Update device |
-| `/devices/delete/:id` | DELETE | admin | Soft-delete device |
+**Popis:** Navrátí všechny modely uživatel v aplikaci.
 
-#### POST /devices/create
+**Autorizace:** JWT Bearer token, role `admin`
 
-**Auth:** Bearer token (admin only)
+**Query parametry:** `?page=1&pageSize=10`
 
-**Request:**
-```json
-{
-  "name": "Tlačítko obývák",
-  "userId": "...",
-  "caregiverId": "..."
-}
+**Výstup (dtoOut) — 200:**
+```js
+const dtoOut = {
+  data: [
+    {
+      id: "xxx",
+      firstName: "Jan",
+      lastName: "Novák",
+      notes: "Diabetik",
+      isActive: true,
+      createdAt: "2026-04-29T10:00:00.000Z",
+      updatedAt: "2026-04-29T10:00:00.000Z"
+    }
+  ],
+  meta: { page: 1, pageSize: 50, total: 1 }
+};
 ```
-
-| Field | Required | Notes |
-|-------|----------|-------|
-| `name` | yes | Device display name |
-| `userId` | no* | Patient this device belongs to |
-| `caregiverId` | no* | Caregiver receiving notifications |
-
-*Both `userId` and `caregiverId` are required for the device to send notifications. Without them, `POST /notifications/create` will fail.
-
-**Response (201):** Device object. A `deviceSecret` is generated server-side for HMAC authentication but is **not returned** in the response. Retrieve it from the database for gateway configuration.
-
-#### GET /devices/all
-
-**Auth:** Bearer token
-
-- **Admin:** returns all devices
-- **Caregiver:** returns only devices assigned to them
-
-**Query:** `?page=1&pageSize=10`
-
-#### GET /devices/get/:id
-
-**Auth:** Bearer token
-
-- **Admin:** can access any device
-- **Caregiver:** can only access their own devices (403 otherwise)
-
-#### PUT /devices/edit/:id
-
-**Auth:** Bearer token (admin only)
-
-All fields optional:
-```json
-{
-  "caregiverId": "new-caregiver-id"
-}
-```
-
-Updatable fields: `name`, `userId`, `caregiverId`, `macAddress`, `firmwareVersion`, `lastSeenAt`.
 
 ---
 
-### Notifications
+### GET /users/get/{id}
 
-| Endpoint | Method | Auth | Role | Description |
-|----------|--------|------|------|-------------|
-| `/notifications/create` | POST | HMAC | device | Create notification (gateway only) |
-| `/notifications/all` | GET | JWT | caregiver, admin | List own notifications |
-| `/notifications/stream` | GET | JWT/query | caregiver | SSE real-time stream |
+**Popis:** Navrátí konkrétní model uživatel podle id.
 
-#### POST /notifications/create
+**Autorizace:** JWT Bearer token, role `admin` nebo `caregiver`
 
-**Auth:** HMAC-SHA256 (IoT gateway only). Rate limited to 10 req/min.
+**Omezení pro caregivera:** Caregiver může zobrazit pouze uživatele, kteří jsou přiřazeni k jeho zařízením. Ověřuje se přes `Device.exists({ caregiverId, userId, isActive: true })`.
 
-**Headers:**
+**Výstup (dtoOut) — 200:** Stejný formát jako jeden objekt z `/users/all`.
+
+**Seznam chyb:**
+
+| Typ | Kód | Zpráva | Status |
+|-----|-----|--------|--------|
+| Error | `notFound` | User not found. | 404 |
+| Error | `forbidden` | You do not have permission. | 403 |
+
+---
+
+### PUT /users/edit/{id}
+
+**Popis:** Zedituje konkrétní model uživatel podle id.
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Vstup (dtoIn) — všechna pole nepovinná (partial update):**
+```js
+const dtoIn = {
+  firstName: "Jan",
+  lastName: "Novák",
+  notes: "Aktualizované poznámky",
+  isActive: true
+};
 ```
-X-Device-Id: <device_id>
-X-Timestamp: <unix_seconds>
+
+**Výstup (dtoOut) — 200:** Aktualizovaný objekt uživatele.
+
+---
+
+### DELETE /users/delete/{id}
+
+**Popis:** Smaže konkrétní model uživatel podle id (soft delete — nastaví `isActive: false`).
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Výstup:** 204 No Content
+
+---
+
+### GET /caregivers/all
+
+**Popis:** Navrátí všechny modely pečující osoby v aplikaci.
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Query parametry:** `?page=1&pageSize=10`
+
+**Výstup (dtoOut) — 200:**
+```js
+const dtoOut = {
+  data: [
+    {
+      id: "xxx",
+      firstName: "Marie",
+      lastName: "Nováková",
+      email: "marie@example.com",
+      phone: "+420123456789",
+      role: "caregiver",
+      notificationPreferences: {
+        sound: true,
+        vibration: true,
+        doNotDisturb: false
+      },
+      isActive: true,
+      createdAt: "2026-04-29T10:00:00.000Z",
+      updatedAt: "2026-04-29T10:00:00.000Z"
+    }
+  ],
+  meta: { page: 1, pageSize: 50, total: 1 }
+};
+```
+
+Citlivá pole (`passwordHash`, `refreshTokens`, `pushSubscription`) se nikdy nevrací.
+
+---
+
+### GET /caregivers/get/{id}
+
+**Popis:** Navrátí konkrétní model pečující osoby podle id.
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Výstup (dtoOut) — 200:** Stejný formát jako objekt z `/caregivers/all`.
+
+---
+
+### PUT /caregivers/edit/{id}
+
+**Popis:** Zedituje konkrétní model pečující osoby podle id.
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Vstup (dtoIn) — všechna pole nepovinná:**
+```js
+const dtoIn = {
+  firstName: "Marie",
+  lastName: "Nováková",
+  email: "marie.nova@example.com",
+  phone: "+420111222333",
+  notificationPreferences: {
+    sound: false,
+    vibration: true,
+    doNotDisturb: true
+  },
+  isActive: false,
+  role: "admin"
+};
+```
+
+Povolená pole: `firstName`, `lastName`, `email`, `phone`, `pushSubscription`, `notificationPreferences`, `isActive`, `role`.
+
+---
+
+### DELETE /caregivers/delete/{id}
+
+**Popis:** Smaže konkrétní model pečující osoby (soft delete).
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Výstup:** 204 No Content
+
+---
+
+### POST /devices/create
+
+**Popis:** Vytvoří nové zařízení. Automaticky vygeneruje `deviceSecret` pro HMAC autentizaci.
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Vstup (dtoIn):**
+```js
+const dtoIn = {
+  name: "Tlačítko obývák",
+  userId: "xxx",
+  caregiverId: "xxx"
+};
+```
+
+**Validační schéma:**
+```js
+const dtoInValidationSchema = {
+  type: "object",
+  properties: {
+    name: { type: "string" },
+    userId: { type: "string" },
+    caregiverId: { type: "string" },
+    lastSeenAt: { type: "string" }
+  },
+  required: ["name"],
+  additionalProperties: false
+};
+```
+
+**Důležité:** `userId` a `caregiverId` jsou technicky nepovinné při vytváření, ale **musí být nastavené** aby zařízení mohlo posílat notifikace (endpoint `/notifications/create` vyžaduje obě reference).
+
+**Výstup (dtoOut) — 201:**
+```js
+const dtoOut = {
+  id: "xxx",
+  name: "Tlačítko obývák",
+  userId: "xxx",
+  caregiverId: "xxx",
+  macAddress: null,
+  firmwareVersion: null,
+  lastSeenAt: null,
+  isActive: true,
+  createdAt: "2026-04-29T10:00:00.000Z",
+  updatedAt: "2026-04-29T10:00:00.000Z"
+};
+```
+
+`deviceSecret` se **nevrací** v API odpovědi (`select: false`). Pro konfiguraci gateway je nutné ho přečíst přímo z databáze.
+
+---
+
+### GET /devices/all
+
+**Popis:** Navrátí zařízení.
+
+**Autorizace:** JWT Bearer token
+- **Admin:** vrátí všechna zařízení
+- **Caregiver:** vrátí pouze zařízení přiřazená přihlášenému pečovateli
+
+**Query parametry:** `?page=1&pageSize=10`
+
+**Výstup (dtoOut) — 200:** Stránkovaný seznam zařízení.
+
+---
+
+### GET /devices/get/{id}
+
+**Popis:** Navrátí konkrétní zařízení.
+
+**Autorizace:** JWT Bearer token
+- **Admin:** přístup ke všem
+- **Caregiver:** pouze k vlastním (jinak 403)
+
+---
+
+### PUT /devices/edit/{id}
+
+**Popis:** Zedituje zařízení.
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Vstup (dtoIn) — všechna pole nepovinná:**
+```js
+const dtoIn = {
+  name: "Tlačítko kuchyň",
+  caregiverId: "novy-caregiver-id"
+};
+```
+
+Povolená pole: `name`, `userId`, `caregiverId`, `macAddress`, `firmwareVersion`, `lastSeenAt`.
+
+---
+
+### DELETE /devices/delete/{id}
+
+**Popis:** Smaže zařízení (soft delete).
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Výstup:** 204 No Content
+
+---
+
+### POST /notifications/create
+
+**Popis:** Vytvoří notifikaci. Volá **pouze IoT gateway** přes HMAC autentizaci.
+
+**Rate limit:** 10 požadavků / minutu
+
+**Autentizace:** HMAC-SHA256 přes hlavičky:
+```
+X-Device-Id: <id_zarizeni>
+X-Timestamp: <unix_sekundy>
 X-Signature: <hmac_sha256_hex>
 ```
 
-**Request:**
-```json
-{
-  "type": "standard"
-}
+HMAC podpis se počítá jako:
+`HMAC-SHA256(deviceSecret, "POST|/notifications/create|<unix_timestamp>|<JSON.stringify(body)>")`
+
+Příklad payload stringu: `POST|/notifications/create|1714400000|{"type":"standard"}`
+
+**Vstup (dtoIn):**
+```js
+const dtoIn = {
+  type: "standard"  // "standard" | "urgent"
+};
 ```
 
-`type` must be `"standard"` or `"urgent"`.
+**Validační schéma:**
+```js
+const dtoInValidationSchema = {
+  type: "object",
+  properties: {
+    type: { type: "string", enum: ["standard", "urgent"] }
+  },
+  required: ["type"],
+  additionalProperties: false
+};
+```
 
-The HMAC signature is computed as: `HMAC-SHA256(deviceSecret, "POST|/notifications/create|<unix_timestamp>|<JSON.stringify(body)>")`
+`deviceId`, `userId`, `caregiverId` se **neposílají v body** — berou se automaticky z ověřeného zařízení (`req.device`).
 
-Example payload string: `POST|/notifications/create|1714400000|{"type":"standard"}`
+**Výstup (dtoOut) — 201:**
+```js
+const dtoOut = {
+  id: "xxx",
+  deviceId: "xxx",
+  userId: "xxx",
+  caregiverId: "xxx",
+  type: "standard",
+  status: "sent",
+  sentAt: "2026-04-29T10:30:00.000Z",
+  deliveredAt: null,
+  cancelledAt: null,
+  createdAt: "2026-04-29T10:30:00.000Z"
+};
+```
 
-**Response (201):** Notification object with `status`, `sentAt`, etc.
+**Sequence:**
+1. Ověření HMAC podpisu (authenticateDevice middleware)
+2. Validace dtoIn
+3. Ověření, že cílový caregiver existuje a je aktivní
+4. Vytvoření notifikace v DB (status: pending)
+5. Odeslání Web Push (pokud má caregiver pushSubscription)
+6. Emitování SSE eventu (pokud má caregiver otevřené spojení)
+7. Aktualizace statusu (sent/failed)
+8. Vrátí dtoOut
 
-#### GET /notifications/all
+**Seznam chyb:**
 
-**Auth:** Bearer token (caregiver or admin)
+| Typ | Kód | Zpráva | Status |
+|-----|-----|--------|--------|
+| Error | `deviceAuthMissing` | Missing X-Device-Id, X-Timestamp, or X-Signature headers. | 401 |
+| Error | `timestampExpired` | Request timestamp is outside the allowed window. | 401 |
+| Error | `deviceNotFound` | Device not found or inactive. | 401 |
+| Error | `signatureInvalid` | HMAC signature verification failed. | 401 |
+| Error | `validationError` | Request body is invalid. | 400 |
+| Error | `caregiverNotFound` | Target caregiver not found or inactive. | 422 |
+| Error | `rateLimitExceeded` | Too many notifications in a short window. | 429 |
 
-Always filtered to the authenticated caregiver's notifications. Optional device filter.
+---
 
-**Query:** `?page=1&pageSize=10&deviceId=<optional>`
+### GET /notifications/all
 
-**Response (200):** Paginated list. Each notification includes populated device name:
-```json
-{
-  "data": [
+**Popis:** Navrátí notifikace přihlášeného pečovatele.
+
+**Autorizace:** JWT Bearer token, role `admin` nebo `caregiver`
+
+Vždy filtrováno podle `caregiverId` z JWT tokenu — každý uživatel vidí pouze své notifikace.
+
+**Query parametry:** `?page=1&pageSize=10&deviceId=<volitelné>`
+
+**Výstup (dtoOut) — 200:**
+```js
+const dtoOut = {
+  data: [
     {
-      "id": "...",
-      "deviceId": { "id": "...", "name": "Tlačítko obývák" },
-      "userId": "...",
-      "caregiverId": "...",
-      "type": "urgent",
-      "status": "sent",
-      "sentAt": "...",
-      "createdAt": "..."
+      id: "xxx",
+      deviceId: { id: "xxx", name: "Tlačítko obývák" },
+      userId: "xxx",
+      caregiverId: "xxx",
+      type: "urgent",
+      status: "sent",
+      sentAt: "2026-04-29T10:30:00.000Z",
+      deliveredAt: null,
+      cancelledAt: null,
+      createdAt: "2026-04-29T10:30:00.000Z"
     }
   ],
-  "meta": { "page": 1, "pageSize": 50, "total": 5 }
-}
+  meta: { page: 1, pageSize: 50, total: 1 }
+};
 ```
 
-#### GET /notifications/stream
-
-**Auth:** JWT via query parameter (EventSource doesn't support headers)
-
-```
-GET /notifications/stream?token=<accessToken>
-```
-
-Server-Sent Events stream. Sends real-time events when new notifications arrive:
-```
-data: {"id":"...","type":"urgent","deviceName":"Tlačítko obývák","createdAt":"..."}
-```
-
-See [notifications.md](notifications.md) for full SSE integration guide.
+Pole `deviceId` je populováno — obsahuje `id` a `name` zařízení.
 
 ---
 
-### Push Notifications
+### GET /notifications/stream
 
-| Endpoint | Method | Role | Description |
-|----------|--------|------|-------------|
-| `/push/subscribe` | POST | caregiver, admin | Save push subscription |
-| `/push/unsubscribe` | DELETE | caregiver, admin | Remove push subscription |
-| `/push/vapid-public-key` | GET | caregiver, admin | Get VAPID public key |
+**Popis:** SSE (Server-Sent Events) stream pro notifikace v reálném čase.
 
-See [notifications.md](notifications.md) for full Web Push integration guide.
+**Autorizace:** JWT token přes query parametr `?token=<accessToken>` (EventSource nepodporuje vlastní hlavičky)
 
-#### POST /push/subscribe
+**Dostupné pouze pro:** `caregiver`
 
-**Auth:** Bearer token
+**Použití na frontendu:**
+```js
+const source = new EventSource(`/notifications/stream?token=${accessToken}`);
+source.onmessage = (event) => {
+  const notification = JSON.parse(event.data);
+  console.log(notification);
+};
+```
 
-**Request:** (Web Push subscription object from `PushManager.subscribe()`)
-```json
-{
-  "endpoint": "https://fcm.googleapis.com/fcm/send/...",
-  "keys": {
-    "p256dh": "base64url...",
-    "auth": "base64url..."
+**Formát SSE eventu:**
+```
+data: {"id":"xxx","type":"urgent","deviceName":"Tlačítko obývák","createdAt":"2026-04-29T10:30:00.000Z"}
+```
+
+Viz [notifications.md](notifications.md) pro kompletní návod na integraci.
+
+---
+
+### POST /invitations/create
+
+**Popis:** Vytvoří pozvánku pro registraci nového uživatele.
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Vstup (dtoIn):**
+```js
+const dtoIn = {
+  ttlHours: 24,
+  role: "caregiver"
+};
+```
+
+| Pole | Výchozí | Poznámka |
+|------|---------|----------|
+| `ttlHours` | 24 | Hodiny do expirace |
+| `role` | `"caregiver"` | `"caregiver"` nebo `"admin"` |
+
+**Výstup (dtoOut) — 201:**
+```js
+const dtoOut = {
+  id: "xxx",
+  code: "A1B2C3D4",
+  role: "caregiver",
+  createdBy: "xxx",
+  expiresAt: "2026-04-30T10:00:00.000Z",
+  usedAt: null,
+  usedBy: null,
+  createdAt: "2026-04-29T10:00:00.000Z"
+};
+```
+
+---
+
+### GET /invitations/all
+
+**Popis:** Navrátí všechny nepoužité pozvánky.
+
+**Autorizace:** JWT Bearer token, role `admin`
+
+**Poznámka:** Vrací **prostý JSON array**, ne stránkovaný objekt `{ data, meta }`.
+
+**Výstup (dtoOut) — 200:**
+```js
+const dtoOut = [
+  {
+    id: "xxx",
+    code: "A1B2C3D4",
+    role: "caregiver",
+    createdBy: "xxx",
+    expiresAt: "2026-04-30T10:00:00.000Z",
+    usedAt: null,
+    usedBy: null,
+    createdAt: "2026-04-29T10:00:00.000Z"
   }
-}
-```
-
-**Response (200):** `{ "ok": true }`
-
-#### DELETE /push/unsubscribe
-
-**Auth:** Bearer token
-
-**Response (200):** `{ "ok": true }`
-
-#### GET /push/vapid-public-key
-
-**Auth:** Bearer token
-
-**Response (200):**
-```json
-{
-  "vapidPublicKey": "BCQYVw..."
-}
+];
 ```
 
 ---
 
-### Invitations
+### DELETE /invitations/revoke/{id}
 
-| Endpoint | Method | Role | Description |
-|----------|--------|------|-------------|
-| `/invitations/create` | POST | admin | Create invitation code |
-| `/invitations/all` | GET | admin | List unused invitations |
-| `/invitations/revoke/:id` | DELETE | admin | Revoke an invitation |
+**Popis:** Zruší (smaže) pozvánku podle id. Hard delete — pozvánka se smaže z databáze.
 
-#### POST /invitations/create
+**Autorizace:** JWT Bearer token, role `admin`
 
-**Auth:** Bearer token (admin only)
-
-**Request:**
-```json
-{
-  "ttlHours": 24,
-  "role": "caregiver"
-}
-```
-
-| Field | Default | Notes |
-|-------|---------|-------|
-| `ttlHours` | 24 | Hours until expiry |
-| `role` | `"caregiver"` | `"caregiver"` or `"admin"` |
-
-**Response (201):**
-```json
-{
-  "id": "...",
-  "code": "A1B2C3D4",
-  "role": "caregiver",
-  "createdBy": "...",
-  "expiresAt": "...",
-  "usedAt": null,
-  "usedBy": null,
-  "createdAt": "..."
-}
-```
-
-#### GET /invitations/all
-
-**Auth:** Bearer token (admin only)
-
-Returns only unused invitations, sorted newest first. **Note:** This endpoint returns a plain JSON array, not a paginated `{ data, meta }` object.
-
-#### DELETE /invitations/revoke/:id
-
-**Auth:** Bearer token (admin only)
-
-Hard-deletes the invitation. Cannot revoke already-used invitations.
-
-**Response:** 204 No Content.
+**Výstup:** 204 No Content
 
 ---
 
-## Error Code Reference
+### POST /push/subscribe
 
-| Code | Status | Description |
-|------|--------|-------------|
-| `unauthorized` | 401 | Missing or malformed Authorization header |
-| `tokenExpired` | 401 | JWT access token has expired |
-| `tokenInvalid` | 401 | JWT access token is invalid |
-| `forbidden` | 403 | Insufficient permissions for this resource |
-| `notFound` | 404 | Resource not found or inactive |
-| `validationError` | 400 | Request body validation failed |
-| `invitationRequired` | 400 | No invitation code provided |
-| `invitationInvalid` | 400 | Invitation invalid, expired, or used |
-| `weakPassword` | 400 | Password shorter than 8 characters |
-| `emailTaken` | 409 | Email already registered |
-| `invalidCredentials` | 401 | Wrong email or password |
-| `noRefreshToken` | 401 | Refresh token cookie missing |
-| `refreshTokenInvalid` | 401 | Refresh token expired or invalid |
-| `refreshTokenReuse` | 401 | Token reuse detected, all sessions revoked |
-| `deviceAuthMissing` | 401 | Missing HMAC headers |
-| `timestampExpired` | 401 | Timestamp outside ±5 min window |
-| `deviceNotFound` | 401 | Device not found or inactive |
-| `signatureInvalid` | 401 | HMAC signature mismatch |
-| `caregiverNotFound` | 422 | Target caregiver not found or inactive |
-| `rateLimitExceeded` | 429 | Too many requests |
+**Popis:** Uloží Web Push subscription pro přihlášeného pečovatele.
+
+**Autorizace:** JWT Bearer token, role `caregiver` nebo `admin`
+
+**Vstup (dtoIn):**
+```js
+const dtoIn = {
+  endpoint: "https://fcm.googleapis.com/fcm/send/...",
+  keys: {
+    p256dh: "base64url...",
+    auth: "base64url..."
+  }
+};
+```
+
+**Výstup (dtoOut) — 200:**
+```js
+const dtoOut = { ok: true };
+```
+
+Viz [notifications.md](notifications.md) pro kompletní návod na Web Push integraci.
+
+---
+
+### DELETE /push/unsubscribe
+
+**Popis:** Odstraní push subscription přihlášeného pečovatele.
+
+**Autorizace:** JWT Bearer token
+
+**Výstup (dtoOut) — 200:**
+```js
+const dtoOut = { ok: true };
+```
+
+---
+
+### GET /push/vapid-public-key
+
+**Popis:** Vrátí VAPID veřejný klíč serveru. Frontend ho potřebuje pro `PushManager.subscribe()`.
+
+**Autorizace:** JWT Bearer token
+
+**Výstup (dtoOut) — 200:**
+```js
+const dtoOut = {
+  vapidPublicKey: "BCQYVw..."
+};
+```
+
+---
+
+### GET /health
+
+**Popis:** Kontrola stavu serveru a databáze. Veřejný endpoint.
+
+**Výstup (dtoOut) — 200 nebo 503:**
+```js
+const dtoOut = {
+  status: "ok",
+  db: "connected",
+  timestamp: "2026-04-29T10:00:00.000Z"
+};
+```
+
+---
+
+## Jak volat chráněné endpointy z frontendu
+
+```js
+const res = await fetch('/devices/all', {
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  credentials: 'include'
+});
+const data = await res.json();
+```
+
+Vždy používejte `credentials: 'include'` pro správné fungování cookies (refresh token).
+
+---
+
+## Kompletní seznam chybových kódů
+
+| Kód | Status | Popis |
+|-----|--------|-------|
+| `unauthorized` | 401 | Chybí nebo neplatná Authorization hlavička |
+| `tokenExpired` | 401 | JWT access token vypršel |
+| `tokenInvalid` | 401 | JWT access token je neplatný |
+| `forbidden` | 403 | Nedostatečná oprávnění |
+| `notFound` | 404 | Zdroj nebyl nalezen nebo je neaktivní |
+| `validationError` | 400 | Validace těla požadavku selhala |
+| `invitationRequired` | 400 | Chybí invitation kód |
+| `invitationInvalid` | 400 | Neplatný, expirovaný nebo použitý kód |
+| `weakPassword` | 400 | Heslo kratší než 8 znaků |
+| `emailTaken` | 409 | Email je již zaregistrován |
+| `invalidCredentials` | 401 | Nesprávný email nebo heslo |
+| `noRefreshToken` | 401 | Chybí refresh token cookie |
+| `refreshTokenInvalid` | 401 | Refresh token neplatný nebo expirovaný |
+| `refreshTokenReuse` | 401 | Detekováno zneužití tokenu, všechny sessions zrušeny |
+| `deviceAuthMissing` | 401 | Chybí HMAC hlavičky |
+| `timestampExpired` | 401 | Timestamp mimo okno ±5 minut |
+| `deviceNotFound` | 401 | Zařízení nenalezeno nebo neaktivní |
+| `signatureInvalid` | 401 | HMAC podpis nesedí |
+| `caregiverNotFound` | 422 | Cílový caregiver nenalezen nebo neaktivní |
+| `rateLimitExceeded` | 429 | Příliš mnoho požadavků |
