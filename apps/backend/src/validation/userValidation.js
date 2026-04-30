@@ -21,6 +21,6 @@ export const updateUserSchema = {
     notes: { type: 'string', maxLength: 500 },
     isActive: { type: 'boolean' },
   },
-  required: ['firstName', 'lastName', 'isActive'],
+  required: [],
   additionalProperties: false,
 };

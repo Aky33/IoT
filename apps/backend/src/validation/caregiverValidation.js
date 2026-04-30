@@ -29,6 +29,6 @@ export const updateCaregiverSchema = {
     isActive: { type: 'boolean' },
     role: { type: 'string', enum: ['caregiver', 'admin'] },
   },
-  required: ['firstName', 'lastName', 'email', 'isActive'],
+  required: [],
   additionalProperties: false,
 };
