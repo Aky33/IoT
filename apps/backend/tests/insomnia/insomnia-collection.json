@@ -319,7 +319,7 @@
         "mimeType": "application/json",
         "text": "{\n  \"type\": \"standard\"\n}"
       },
-      "preRequestScript": "const crypto = require('crypto');\nconst ts = Math.floor(Date.now() / 1000).toString();\nconst body = JSON.stringify({ type: 'standard' });\nconst payload = `POST|/notifications/create|${ts}|${body}`;\nconst sig = crypto.createHmac('sha256', insomnia.environment.get('deviceSecret')).update(payload).digest('hex');\ninsomnia.environment.set('hmacTimestamp', ts);\ninsomnia.environment.set('hmacSignature', sig);"
+      "preRequestScript": "const ts = Math.floor(Date.now() / 1000).toString();\nconst body = JSON.stringify({ type: 'standard' });\nconst payload = `POST|/notifications/create|${ts}|${body}`;\nconst secret = insomnia.environment.get('deviceSecret');\nconst enc = new TextEncoder();\nconst key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);\nconst sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload));\nconst sig = Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, '0')).join('');\ninsomnia.environment.set('hmacTimestamp', ts);\ninsomnia.environment.set('hmacSignature', sig);"
     },
     {
       "_id": "req_list_notifications",
