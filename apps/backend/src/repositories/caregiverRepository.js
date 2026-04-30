@@ -11,11 +11,6 @@ function normalizePageInfo({ page = 1, pageSize = DEFAULT_PAGE_SIZE } = {}) {
 }
 
 export const caregiverRepository = {
-  async create(data) {
-    const doc = await Caregiver.create(data);
-    return doc.toJSON();
-  },
-
   async findById(id) {
     const doc = await Caregiver.findOne({ _id: id, isActive: true });
     return doc ? doc.toJSON() : null;
@@ -49,7 +44,9 @@ export const caregiverRepository = {
   },
 
   async update(id, data) {
-    const doc = await Caregiver.findOneAndUpdate({ _id: id, isActive: true }, data, {
+    const allowed = ['firstName', 'lastName', 'email', 'phone', 'pushSubscription', 'notificationPreferences', 'isActive', 'role'];
+    const sanitized = Object.fromEntries(Object.entries(data).filter(([k]) => allowed.includes(k)));
+    const doc = await Caregiver.findOneAndUpdate({ _id: id, isActive: true }, sanitized, {
       new: true,
       runValidators: true,
     });

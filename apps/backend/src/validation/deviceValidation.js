@@ -18,6 +18,5 @@ export const editDeviceSchema = {
     caregiverId: { type: 'string' },
     lastSeenAt: { type: 'string' },
   },
-  required: ['name'],
   additionalProperties: false,
 };

@@ -6,7 +6,7 @@ import { createNotificationSchema } from '../validation/notificationValidation.j
 
 export const notificationCreateRouter = Router();
 notificationCreateRouter.post(
-  '/create',
+  '/',
   validateBody(createNotificationSchema),
   notificationController.create,
 );

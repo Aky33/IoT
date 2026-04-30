@@ -1,7 +1,3 @@
-// Request body validation schemas — consumed by validateBody middleware.
-// NOTE: validateBody is currently a pass-through stub. Full enforcement
-// (missing required, type/value checks, defaults) is TBD.
-
 export const createUserSchema = {
   type: 'object',
   properties: {
@@ -21,6 +17,6 @@ export const updateUserSchema = {
     notes: { type: 'string', maxLength: 500 },
     isActive: { type: 'boolean' },
   },
-  required: ['firstName', 'lastName', 'isActive'],
+  required: [],
   additionalProperties: false,
 };

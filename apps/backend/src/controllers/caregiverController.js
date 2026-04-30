@@ -2,11 +2,6 @@ import { caregiverRepository } from '../repositories/caregiverRepository.js';
 import { NotFoundError } from '../errors/AppError.js';
 
 export const caregiverController = {
-  async create(req, res) {
-    const caregiver = await caregiverRepository.create(req.body);
-    res.status(201).json(caregiver);
-  },
-
   async list(req, res) {
     const { page, pageSize } = req.query;
     const result = await caregiverRepository.findMany({ page, pageSize });

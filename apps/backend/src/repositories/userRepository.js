@@ -49,7 +49,9 @@ export const userRepository = {
   },
 
   async update(id, data) {
-    const doc = await User.findOneAndUpdate({ _id: id, isActive: true }, data, {
+    const allowed = ['firstName', 'lastName', 'notes', 'isActive'];
+    const sanitized = Object.fromEntries(Object.entries(data).filter(([k]) => allowed.includes(k)));
+    const doc = await User.findOneAndUpdate({ _id: id, isActive: true }, sanitized, {
       new: true,
       runValidators: true,
     });

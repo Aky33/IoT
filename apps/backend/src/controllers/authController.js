@@ -163,12 +163,20 @@ export const authController = {
 
     // Rotate: remove old + expired, issue new.
     const newRefreshToken = signRefreshToken(caregiver);
-    await Caregiver.findByIdAndUpdate(caregiver._id, {
-      $pull: { refreshTokens: { $or: [{ token: oldToken }, { expiresAt: { $lt: new Date() } }] } },
-    });
-    await Caregiver.findByIdAndUpdate(caregiver._id, {
-      $push: { refreshTokens: { token: newRefreshToken, expiresAt: refreshExpiresAt() } },
-    });
+    await Caregiver.findByIdAndUpdate(caregiver._id, [
+      { $set: { refreshTokens: {
+        $concatArrays: [
+          { $filter: {
+            input: '$refreshTokens',
+            cond: { $and: [
+              { $ne: ['$$this.token', oldToken] },
+              { $gt: ['$$this.expiresAt', new Date()] },
+            ]},
+          }},
+          [{ token: newRefreshToken, expiresAt: refreshExpiresAt() }],
+        ],
+      }}},
+    ]);
 
     const accessToken = signAccessToken(caregiver);
     setRefreshCookie(res, newRefreshToken);

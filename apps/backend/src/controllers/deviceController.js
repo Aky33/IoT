@@ -18,7 +18,7 @@ export const deviceController = {
   async get(req, res) {
     const device = await deviceRepository.findById(req.params.id);
     if (!device) throw new NotFoundError('Device', req.params.id);
-    if (req.user.role !== 'admin' && device.caregiverId !== req.user.sub) {
+    if (req.user.role !== 'admin' && String(device.caregiverId) !== req.user.sub) {
       throw new ForbiddenError();
     }
     res.json(device);
