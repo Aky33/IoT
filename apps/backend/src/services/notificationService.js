@@ -1,20 +1,10 @@
 import { Caregiver } from '../models/Caregiver.js';
+import { Device } from '../models/Device.js';
 import { notificationRepository } from '../repositories/notificationRepository.js';
 import { AppError } from '../errors/AppError.js';
+import { sendPush } from './pushService.js';
+import { emit } from './sseManager.js';
 
-/**
- * createFromDevicePress — called by POST /notifications/create.
- *
- * The device is already authenticated and attached to req.device
- * by the authenticateDevice middleware (HMAC-verified).
- *
- * Flow:
- *   1. Read userId + caregiverId from the authenticated device.
- *   2. Verify the target caregiver exists and is active.
- *   3. Create notification with denormalized snapshot of device relationships.
- *   4. (Future) Send push notification via FCM / alternative.
- *   5. Update notification status.
- */
 export async function createFromDevicePress(device, type) {
   const caregiver = await Caregiver.findById(device.caregiverId);
   if (!caregiver || !caregiver.isActive) {
@@ -34,14 +24,29 @@ export async function createFromDevicePress(device, type) {
     status: 'pending',
   });
 
-  // TODO: send push notification to caregiver.fcmToken.
-  // On success: update status → 'sent', set sentAt.
-  // On failure: update status → 'failed'.
-  //
-  // For now, mark as 'sent' immediately (no real push yet).
+  const deviceDoc = await Device.findById(device.id);
+  const deviceName = deviceDoc?.name || 'Neznámé zařízení';
+
+  let status = 'sent';
+  if (caregiver.pushSubscription?.endpoint) {
+    const pushed = await sendPush(caregiver._id, caregiver.pushSubscription, {
+      id: notification.id,
+      type,
+      deviceName,
+    });
+    if (!pushed) status = 'failed';
+  }
+
+  emit(device.caregiverId.toString(), {
+    id: notification.id,
+    type,
+    deviceName,
+    createdAt: notification.createdAt,
+  });
+
   const updated = await notificationRepository.update(notification.id, {
-    status: 'sent',
-    sentAt: new Date(),
+    status,
+    sentAt: status === 'sent' ? new Date() : undefined,
   });
 
   return updated || notification;
