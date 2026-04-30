@@ -16,5 +16,8 @@ export function sseHandler(req, res) {
   if (!req.user?.sub) {
     throw new AppError('unauthorized', 'Missing authentication.', {}, 401);
   }
+  if (req.user.role !== 'caregiver') {
+    throw new AppError('forbidden', 'SSE stream is available only for caregivers.', {}, 403);
+  }
   subscribe(req.user.sub, res);
 }

@@ -341,8 +341,10 @@ Updatable fields: `firstName`, `lastName`, `email`, `phone`, `pushSubscription`,
 | Field | Required | Notes |
 |-------|----------|-------|
 | `name` | yes | Device display name |
-| `userId` | no | Patient this device belongs to |
-| `caregiverId` | no | Caregiver receiving notifications |
+| `userId` | no* | Patient this device belongs to |
+| `caregiverId` | no* | Caregiver receiving notifications |
+
+*Both `userId` and `caregiverId` are required for the device to send notifications. Without them, `POST /notifications/create` will fail.
 
 **Response (201):** Device object. A `deviceSecret` is generated server-side for HMAC authentication but is **not returned** in the response. Retrieve it from the database for gateway configuration.
 
@@ -405,7 +407,9 @@ X-Signature: <hmac_sha256_hex>
 
 `type` must be `"standard"` or `"urgent"`.
 
-The HMAC signature is computed as: `HMAC-SHA256(deviceSecret, "POST|/notifications/create|timestamp|body")`
+The HMAC signature is computed as: `HMAC-SHA256(deviceSecret, "POST|/notifications/create|<unix_timestamp>|<JSON.stringify(body)>")`
+
+Example payload string: `POST|/notifications/create|1714400000|{"type":"standard"}`
 
 **Response (201):** Notification object with `status`, `sentAt`, etc.
 
@@ -542,7 +546,7 @@ See [notifications.md](notifications.md) for full Web Push integration guide.
 
 **Auth:** Bearer token (admin only)
 
-Returns only unused invitations, sorted newest first.
+Returns only unused invitations, sorted newest first. **Note:** This endpoint returns a plain JSON array, not a paginated `{ data, meta }` object.
 
 #### DELETE /invitations/revoke/:id
 

@@ -47,7 +47,7 @@ export function createApp() {
   app.use('/notifications/create', notificationsRateLimit, authenticateDevice, notificationCreateRouter);
 
   // --- Caregiver / Admin (JWT auth) ---
-  app.use('/notifications/stream', authenticate, authorize('caregiver'), sseHandler);
+  app.use('/notifications/stream', sseHandler);
   app.use('/notifications', authenticate, authorize('caregiver', 'admin'), notificationListRouter);
   app.use('/push', authenticate, authorize('caregiver', 'admin'), pushRouter);
   app.use('/invitations', authenticate, authorize('admin'), invitationsRouter);
