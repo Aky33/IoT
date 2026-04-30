@@ -2,11 +2,13 @@ import webpush from 'web-push';
 import { config } from '../config/index.js';
 import { Caregiver } from '../models/Caregiver.js';
 
-webpush.setVapidDetails(
-  config.vapid.subject,
-  config.vapid.publicKey,
-  config.vapid.privateKey,
-);
+if (config.vapid.publicKey && config.vapid.privateKey) {
+  webpush.setVapidDetails(
+    config.vapid.subject,
+    config.vapid.publicKey,
+    config.vapid.privateKey,
+  );
+}
 
 export async function sendPush(caregiverId, subscription, notification) {
   const payload = JSON.stringify({

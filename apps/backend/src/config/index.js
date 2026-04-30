@@ -21,8 +21,8 @@ export const config = {
     refreshExpires: process.env.JWT_REFRESH_EXPIRES || '7d',
   },
   vapid: {
-    publicKey: required('VAPID_PUBLIC_KEY'),
-    privateKey: required('VAPID_PRIVATE_KEY'),
+    publicKey: process.env.VAPID_PUBLIC_KEY || '',
+    privateKey: process.env.VAPID_PRIVATE_KEY || '',
     subject: process.env.VAPID_SUBJECT || 'mailto:admin@iot-care.local',
   },
 };
