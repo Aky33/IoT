@@ -9,6 +9,7 @@ import { requestId } from './middleware/requestId.js';
 import { authenticate } from './middleware/authenticate.js';
 import { authenticateDevice } from './middleware/authenticateDevice.js';
 import { authorize } from './middleware/authorize.js';
+import { authRateLimit, notificationsRateLimit } from './middleware/rateLimit.js';
 
 import { authRouter } from './routes/auth.js';
 import { usersRouter } from './routes/users.js';
@@ -40,10 +41,10 @@ export function createApp() {
       .json({ status, db: dbStatus, timestamp: new Date().toISOString() });
   });
 
-  app.use('/auth', authRouter);
+  app.use('/auth', authRateLimit, authRouter);
 
   // --- IoT Device (HMAC auth) ---
-  app.use('/notifications', authenticateDevice, notificationCreateRouter);
+  app.use('/notifications', notificationsRateLimit, authenticateDevice, notificationCreateRouter);
 
   // --- Caregiver / Admin (JWT auth) ---
   app.use('/notifications', authenticate, authorize('caregiver', 'admin'), notificationListRouter);

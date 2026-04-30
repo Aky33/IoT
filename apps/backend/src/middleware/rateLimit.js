@@ -36,3 +36,18 @@ export const writeRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Auth endpoints — brute-force protection for login/register.
+export const authRateLimit = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: {
+      code: 'rateLimitExceeded',
+      message: 'Too many auth attempts. Try again later.',
+      details: {},
+    },
+  },
+});
