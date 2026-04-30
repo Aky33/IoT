@@ -9,6 +9,7 @@ export function subscribe(caregiverId, res) {
     'Cache-Control': 'no-cache',
     Connection: 'keep-alive',
   });
+  if (typeof res.flushHeaders === 'function') res.flushHeaders();
 
   const listener = (data) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
