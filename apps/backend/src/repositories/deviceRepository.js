@@ -65,7 +65,9 @@ export const deviceRepository = {
   },
 
   async update(id, data) {
-    const doc = await Device.findOneAndUpdate({ _id: id, isActive: true }, data, {
+    const allowed = ['name', 'userId', 'caregiverId', 'macAddress', 'firmwareVersion', 'lastSeenAt'];
+    const sanitized = Object.fromEntries(Object.entries(data).filter(([k]) => allowed.includes(k)));
+    const doc = await Device.findOneAndUpdate({ _id: id, isActive: true }, sanitized, {
       new: true,
       runValidators: true,
     });
