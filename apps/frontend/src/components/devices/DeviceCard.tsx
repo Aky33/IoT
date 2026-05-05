@@ -1,0 +1,31 @@
+import type { Device } from "../../types/device";
+import type { UserRole } from "../../types/common";
+import { DeviceStatusIndicator } from "./DeviceStatusIndicator";
+import { DeviceActionsMenu } from "./DeviceActionsMenu";
+
+type DeviceCardProps = {
+  device: Device;
+  userRole: UserRole;
+  onOpenDetail?: (deviceId: string) => void;
+  onEdit?: (deviceId: string) => void;
+  onDelete?: (deviceId: string) => void;
+  onPair?: (deviceId: string) => void;
+  onDeactivate?: (deviceId: string) => void;
+  isProcessing?: boolean;
+};
+
+export function DeviceCard({ device, userRole, ...actions }: DeviceCardProps) {
+  const needsHighlight = device.status === "offline" || device.status === "error";
+
+  return (
+    <article className="panel stack" style={needsHighlight ? { borderColor: "#f59e0b" } : undefined}>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <strong>{device.name}</strong>
+        <DeviceStatusIndicator status={device.status} lastSeenAt={device.lastSeenAt} />
+      </div>
+      <small>Serial: {device.serialNumber}</small>
+      <small>Location: {device.location || "n/a"}</small>
+      <DeviceActionsMenu device={device} userRole={userRole} {...actions} />
+    </article>
+  );
+}
