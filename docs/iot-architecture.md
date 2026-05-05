@@ -5,28 +5,28 @@ Hlavní přehled IoT architektury projektu asistenčního tlačítka. Detailní 
 ## Přehled systému
 
 ```text
-Hendikepovaný       HARDWARIO           HARDWARIO Playground         Express.js         Mobilní app
-  uživatel          Core Module                (PC)                  Backend            pečující osoby
-                    (IoT Node)               (Gateway)               (Cloud)            (React.js)
+Hendikepovaný       HARDWARIO                    PC / RPi              Express.js         Mobilní app
+  uživatel          Core Module                 (Gateway)              Backend            pečující osoby
+                    (IoT Node)                                         (Cloud)            (React.js)
 
     ┌─┐          ┌──────────────┐     ┌────────────────────┐    ┌──────────────┐    ┌──────────────┐
-    │ │──stisk──▶│  Firmware    │ USB │  bcg → MQTT        │    │              │    │              │
-    │ │          │  (twr-sdk)   │────▶│  Node-RED flows    │───▶│  /notif.     │───▶│  Push (FCM)  │
+    │ │──stisk──▶│  Firmware    │ USB │  Node-RED flows    │    │              │    │              │
+    │ │          │  (twr-sdk)   │────▶│  Serial In/Out     │───▶│  /notif.     │───▶│  Push (FCM)  │
     │ │◀──LED───│  LED řízení  │◀────│  MongoDB (lokální) │◀───│  /devices   │    │  Seznam      │
-    └─┘          │  Countdown   │MQTT │  Dashboard         │HTTP│  /auth      │    │  notifikací  │
+    └─┘          │  Countdown   │ USB │  Dashboard         │HTTP│  /auth      │    │  notifikací  │
                  └──────────────┘     └────────────────────┘    └──────────────┘    └──────────────┘
 ```
 
 ## Business aktéři
 
-| Aktér                  | Role                                                        | Rozhraní                              |
-| ---------------------- | ----------------------------------------------------------- | ------------------------------------- |
-| Hendikepovaný uživatel | Přivolává pomoc stiskem tlačítka                            | Fyzické IoT zařízení (tlačítko + LED) |
-| Pečující osoba         | Přijímá notifikace, poskytuje pomoc                         | Mobilní aplikace (React.js)           |
-| IoT zařízení           | Snímá stisk, řídí LED, odesílá event přes UART              | HARDWARIO Core Module                 |
-| Gateway                | Přijímá MQTT eventy, přeposílá na cloud, vrací LED feedback | Node-RED v HARDWARIO Playground       |
-| Backend systém         | Zpracovává notifikace, odesílá push, uchovává historii      | Express.js + MongoDB (cloud)          |
-| Mobilní aplikace       | Zobrazuje push notifikace a seznam/historii                 | React.js (budoucí)                    |
+| Aktér                  | Role                                                                   | Rozhraní                              |
+| ---------------------- | ---------------------------------------------------------------------- | ------------------------------------- |
+| Hendikepovaný uživatel | Přivolává pomoc stiskem tlačítka                                       | Fyzické IoT zařízení (tlačítko + LED) |
+| Pečující osoba         | Přijímá notifikace, poskytuje pomoc                                    | Mobilní aplikace (React.js)           |
+| IoT zařízení           | Snímá stisk, řídí LED, odesílá event přes UART                         | HARDWARIO Core Module                 |
+| Gateway                | Přijímá serial eventy přes USB, přeposílá na cloud, vrací LED feedback | Node-RED na PC/RPi                    |
+| Backend systém         | Zpracovává notifikace, odesílá push, uchovává historii                 | Express.js + MongoDB (cloud)          |
+| Mobilní aplikace       | Zobrazuje push notifikace a seznam/historii                            | React.js (budoucí)                    |
 
 ## Business use cases → technické mapování
 

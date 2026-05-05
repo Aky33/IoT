@@ -101,23 +101,18 @@ Core Module posílá JSON zprávy přes USB serial port (UART2). Formát: JSON a
 ["button/-/event", {"type": "urgent"}]       okamžitě po long press
 ```
 
-bcg service v HARDWARIO Playground překládá na MQTT:
-
-```text
-node/{device-id}/button/-/event → {"type": "standard"}
-node/{device-id}/button/-/event → {"type": "urgent"}
-```
+Gateway (Node-RED) čte tyto zprávy přímo z USB sériového portu pomocí Serial In node.
 
 ### Příjem potvrzení (Gateway → IoT Node)
 
-Gateway po zpracování HTTP response z cloudu publikuje MQTT zprávu zpět:
+Gateway po zpracování HTTP response z cloudu odesílá JSON zprávu zpět přes USB serial:
 
 ```text
-node/{device-id}/led/-/set → {"state": "success"}   cloud přijal notifikaci
-node/{device-id}/led/-/set → {"state": "error"}     odeslání selhalo
+["led/-/set", {"state": "success"}]   cloud přijal notifikaci
+["led/-/set", {"state": "error"}]     odeslání selhalo
 ```
 
-bcg service přeloží MQTT zpět na serial JSON → firmware parsuje a řídí LED.
+Firmware parsuje příchozí serial JSON a řídí LED.
 
 Timeout: pokud firmware nedostane odpověď do 15 sekund, automaticky nastaví LED na error (5× blink). Prevence nekonečného čekání.
 
@@ -125,10 +120,10 @@ Timeout: pokud firmware nedostane odpověď do 15 sekund, automaticky nastaví L
 
 ```text
 1. Uživatel stiskne tlačítko
-2. Firmware → UART JSON → bcg → MQTT → Gateway (Node-RED)
+2. Firmware → UART JSON → USB kabel → Gateway (Node-RED Serial In)
 3. Gateway → HTTPS POST → Cloud backend
 4. Cloud → HTTP 201 (notifikace vytvořena)
-5. Gateway → MQTT publish "led/success" → bcg → serial → Firmware
+5. Gateway → Serial Out: ["led/-/set",{"state":"success"}] → USB → Firmware
 6. Firmware → LED solid 3s → uživatel ví, že odesláno
 ```
 
@@ -217,4 +212,4 @@ void application_init(void) {
 | Odeslání standardní notifikace | IDLE → COUNTDOWN → STANDARD_SEND → WAIT_RESPONSE → LED_SUCCESS | Krátký stisk, 5s odpočítávání, odeslání, LED potvrzení |
 | Odeslání urgentní notifikace   | IDLE → URGENT_SEND → WAIT_RESPONSE → LED_SUCCESS               | Dlouhý stisk 3s, okamžité odeslání, LED potvrzení      |
 | Zrušení odesílání              | COUNTDOWN → CANCEL                                             | 2. stisk během 5s, LED zhasne, žádný event             |
-| Potvrzení odeslání (LED)       | WAIT_RESPONSE → LED_SUCCESS / LED_ERROR                        | Gateway vrací výsledek přes MQTT → serial → LED        |
+| Potvrzení odeslání (LED)       | WAIT_RESPONSE → LED_SUCCESS / LED_ERROR                        | Gateway vrací výsledek přes USB serial → LED           |

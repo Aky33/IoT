@@ -2,50 +2,48 @@
 
 ## Popis
 
-Gateway je softwarová komponenta běžící na PC (nebo RaspberryPi), která slouží jako prostředník mezi IoT Node a cloud backendem. Přijímá button eventy z IoT zařízení přes MQTT, okamžitě je přeposílá do cloudu přes HTTPS a vrací potvrzení o doručení zpět na IoT Node (LED feedback).
+Gateway je softwarová komponenta běžící na PC (nebo RaspberryPi), která slouží jako prostředník mezi IoT Node a cloud backendem. Přijímá button eventy z IoT zařízení přímo přes USB sériový port, okamžitě je přeposílá do cloudu přes HTTPS a vrací potvrzení o doručení zpět na IoT Node (LED feedback).
 
 ## Platforma
 
-Gateway běží v rámci HARDWARIO Playground, který bundluje:
-
-| Komponenta              | Účel                                                                  |
-| ----------------------- | --------------------------------------------------------------------- |
-| bcg service             | Bridge: USB serial ↔ MQTT (překládá zprávy z IoT Node na MQTT topics) |
-| MQTT broker (Mosquitto) | Message broker pro interní komunikaci                                 |
-| Node-RED                | Flow-based runtime pro zpracování eventů                              |
-| Firmware flasher        | Nahrávání firmware do IoT Node                                        |
+| Komponenta               | Účel                                                          |
+| ------------------------ | ------------------------------------------------------------- |
+| Node-RED                 | Flow-based runtime pro zpracování eventů                      |
+| node-red-node-serialport | Čtení/zápis z USB sériového portu (přímé spojení s IoT Node)  |
+| Firmware flasher         | Nahrávání firmware do IoT Node (HARDWARIO Playground)         |
 
 ## Komunikační řetězec (obousměrný)
 
 ```text
 ODESÍLÁNÍ (IoT Node → Cloud):
-  IoT Node ──USB/UART──▶ bcg ──▶ MQTT broker ──▶ Node-RED ──HTTPS──▶ Cloud
+  IoT Node ──USB/UART──▶ Node-RED (serial in) ──HTTPS──▶ Cloud
 
 POTVRZENÍ (Cloud → IoT Node):
-  Cloud ──HTTP response──▶ Node-RED ──MQTT pub──▶ bcg ──serial──▶ IoT Node (LED)
+  Cloud ──HTTP response──▶ Node-RED (serial out) ──USB/UART──▶ IoT Node (LED)
 ```
 
-Node-RED nečte serial port přímo. Používá MQTT In node s topic `node/#`.
+Node-RED čte USB sériový port přímo pomocí Serial In node (`node-red-node-serialport`).
 
-## MQTT topics
+## Sériový protokol
 
-### Vstupní (z IoT Node přes bcg)
+### Vstupní (z IoT Node přes USB)
 
-| Topic                      | Payload                | Popis                                   |
-| -------------------------- | ---------------------- | --------------------------------------- |
-| `node/{id}/button/-/event` | `{"type": "standard"}` | Standardní notifikace (po 5s countdown) |
-| `node/{id}/button/-/event` | `{"type": "urgent"}`   | Urgentní notifikace (okamžitá)          |
+| JSON zpráva                                     | Popis                                   |
+| ----------------------------------------------- | --------------------------------------- |
+| `["button/-/event", {"type": "standard"}]\n`    | Standardní notifikace (po 5s countdown) |
+| `["button/-/event", {"type": "urgent"}]\n`      | Urgentní notifikace (okamžitá)          |
 
-### Výstupní (zpět na IoT Node přes bcg)
+### Výstupní (zpět na IoT Node přes USB)
 
-| Topic                 | Payload                | Popis                                  |
-| --------------------- | ---------------------- | -------------------------------------- |
-| `node/{id}/led/-/set` | `{"state": "success"}` | Cloud přijal notifikaci → LED solid 3s |
-| `node/{id}/led/-/set` | `{"state": "error"}`   | Odeslání selhalo → LED 5× blink        |
+| JSON zpráva                                     | Popis                                  |
+| ----------------------------------------------- | -------------------------------------- |
+| `["led/-/set", {"state": "success"}]\n`         | Cloud přijal notifikaci → LED solid 3s |
+| `["led/-/set", {"state": "error"}]\n`           | Odeslání selhalo → LED 5× blink        |
 
 ## Node-RED rozšíření
 
 ```text
+node-red-node-serialport   Přímé čtení/zápis z USB sériového portu IoT Node
 node-red-node-mongodb      Lokální persistence (audit log, offline queue)
 node-red-dashboard         Dashboard UI na :1880/ui
 ```
@@ -59,22 +57,23 @@ Gateway funguje jako **real-time forwarder** s obousměrnou komunikací. Button 
 │  Node-RED flows                                                       │
 │                                                                       │
 │  ┌──────────────┐                                                    │
-│  │ MQTT In      │                                                    │
-│  │ node/#       │                                                    │
-│  │ button/event │                                                    │
+│  │ Serial In    │                                                    │
+│  │ USB port     │                                                    │
+│  │ (JSON lines) │                                                    │
 │  └──────┬───────┘                                                    │
 │         │                                                             │
 │         ▼                                                             │
 │  ┌──────────────────────────────────────────────────────────────┐    │
 │  │  Button handler (okamžitý)                                    │    │
 │  │                                                                │    │
-│  │  1. Parse type (standard / urgent)                            │    │
-│  │  2. Function: sestavit HMAC-SHA256 podpis                     │    │
-│  │  3. HTTP Request: POST /notifications/create → cloud          │    │
-│  │  4. Switch (HTTP status):                                      │    │
-│  │     ├── 201 → MQTT Out: node/{id}/led/-/set → "success"      │    │
-│  │     └── error → MQTT Out: node/{id}/led/-/set → "error"      │    │
-│  │  5. MongoDB: uložit event (audit + offline backup)            │    │
+│  │  1. JSON parse sériové zprávy                                 │    │
+│  │  2. Parse type (standard / urgent)                            │    │
+│  │  3. Function: sestavit HMAC-SHA256 podpis                     │    │
+│  │  4. HTTP Request: POST /notifications/create → cloud          │    │
+│  │  5. Switch (HTTP status):                                      │    │
+│  │     ├── 201 → Serial Out: ["led/-/set",{"state":"success"}]  │    │
+│  │     └── error → Serial Out: ["led/-/set",{"state":"error"}]  │    │
+│  │  6. MongoDB: uložit event (audit + offline backup)            │    │
 │  └──────────────────────────────────────────────────────────────┘    │
 │                                                                       │
 │  ┌──────────────────────────────────────────────────────────────┐    │
@@ -110,10 +109,10 @@ Gateway funguje jako **real-time forwarder** s obousměrnou komunikací. Button 
 
 ```text
 1. IoT Node stiskne tlačítko
-   → UART ["button/-/event", {"type":"standard"}]
-   → bcg → MQTT
+   → UART: ["button/-/event", {"type":"standard"}]\n
+   → USB kabel → Node-RED Serial In
 
-2. Node-RED Button handler přijme MQTT event
+2. Node-RED Button handler přijme sériovou zprávu, JSON parse
 
 3. Node-RED okamžitě: HTTPS POST /notifications/create (HMAC signed)
    → Cloud backend
@@ -125,10 +124,10 @@ Gateway funguje jako **real-time forwarder** s obousměrnou komunikací. Button 
    d) vrátí HTTP 201
 
 5. Node-RED přijme HTTP 201
-   → MQTT publish: node/{id}/led/-/set → {"state": "success"}
+   → Serial Out: ["led/-/set", {"state": "success"}]\n
+   → USB kabel → IoT Node firmware
 
-6. bcg přeloží MQTT → serial → IoT Node firmware
-   → LED: trvalé svícení 3s → zhasne
+6. IoT Node firmware → LED: trvalé svícení 3s → zhasne
 
 7. MongoDB: uložit event jako "synced" (audit trail)
 ```
@@ -141,7 +140,7 @@ Gateway funguje jako **real-time forwarder** s obousměrnou komunikací. Button 
 4. HTTPS POST selže (timeout / connection refused)
 
 5. Node-RED:
-   → MQTT publish: node/{id}/led/-/set → {"state": "error"}
+   → Serial Out: ["led/-/set", {"state": "error"}]\n
    → MongoDB: uložit event jako "pending"
 
 6. IoT Node firmware → LED: 5× krátké bliknutí → zhasne
@@ -157,7 +156,7 @@ Gateway funguje jako **real-time forwarder** s obousměrnou komunikací. Button 
 ```text
 Fáze                    Potvrzení              Kdo vidí          Kde se sleduje
 ─────────────────────   ────────────────────   ────────────────  ─────────────────
-1. Node → Gateway       MQTT přijetí           —                Gateway log
+1. Node → Gateway       Serial přijetí         —                Gateway log
 2. Gateway → Cloud      HTTP 201               LED: solid 3s    Gateway MongoDB
 3. Cloud → FCM          FCM message_id         —                Notification.status = "sent"
 4. FCM → telefon        delivery receipt       —                Notification.status = "delivered"
@@ -276,11 +275,11 @@ sudo systemctl enable nodered.service
 
 ## Mapování na Business Use Cases
 
-| Business Use Case               | Gateway role                                                                  |
-| ------------------------------- | ----------------------------------------------------------------------------- |
-| Odeslání standardní notifikace  | Přijme MQTT event → okamžitý HTTPS POST → vrátí LED feedback (success/error)  |
-| Odeslání urgentní notifikace    | Stejný flow jako standardní (IoT Node rozlišuje typ)                          |
-| Zrušení odesílání               | Gateway se neúčastní — zrušení probíhá na IoT Node před odesláním UART eventu |
-| Potvrzení odeslání (LED)        | Přeloží HTTP response na MQTT publish → bcg → serial → IoT Node LED           |
-| Přijmutí notifikace na telefonu | Gateway se neúčastní — řeší cloud backend + FCM                               |
-| Zobrazení seznamu notifikací    | Gateway se neúčastní — řeší cloud backend + mobilní app                       |
+| Business Use Case               | Gateway role                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| Odeslání standardní notifikace  | Přijme serial event → okamžitý HTTPS POST → vrátí LED feedback (success/error)  |
+| Odeslání urgentní notifikace    | Stejný flow jako standardní (IoT Node rozlišuje typ)                            |
+| Zrušení odesílání               | Gateway se neúčastní — zrušení probíhá na IoT Node před odesláním UART eventu   |
+| Potvrzení odeslání (LED)        | Přeloží HTTP response na serial out → USB → IoT Node LED                        |
+| Přijmutí notifikace na telefonu | Gateway se neúčastní — řeší cloud backend + FCM                                 |
+| Zobrazení seznamu notifikací    | Gateway se neúčastní — řeší cloud backend + mobilní app                         |
