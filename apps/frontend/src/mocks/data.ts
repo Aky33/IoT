@@ -5,18 +5,18 @@ import type { User } from "../types/user";
 
 export const mockUsers: User[] = [
   { id: "u-1", name: "Admin User", role: "admin", email: "admin@iot.local" },
-  { id: "u-2", name: "Caregiver User", role: "user", email: "caregiver@iot.local" }
+  { id: "u-2", name: "Caregiver User", role: "caregiver", email: "caregiver@iot.local" }
 ];
 
 export const mockDevices: Device[] = [
   {
     id: "d-1",
     name: "Tlacitko Obyvak",
-    serialNumber: "SN-001",
     status: "online",
     assignedUserId: "u-2",
     caregiverId: "u-2",
-    location: "Obyvak",
+    macAddress: "00:11:22:33:44:55",
+    firmwareVersion: "1.0.0",
     lastSeenAt: new Date().toISOString(),
     ledStatus: "idle",
     createdAt: new Date().toISOString()
@@ -24,11 +24,11 @@ export const mockDevices: Device[] = [
   {
     id: "d-2",
     name: "Tlacitko Loznice",
-    serialNumber: "SN-002",
     status: "offline",
     assignedUserId: "u-2",
     caregiverId: "u-2",
-    location: "Loznice",
+    macAddress: "00:11:22:33:44:66",
+    firmwareVersion: "1.0.0",
     lastSeenAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     ledStatus: "error",
     createdAt: new Date().toISOString()
@@ -48,11 +48,11 @@ export const mockNotifications: Notification[] = [
   {
     id: "n-2",
     type: "standard",
-    status: "resolved",
+    status: "delivered",
     deviceId: "d-2",
     deviceName: "Tlacitko Loznice",
     createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
-    resolvedAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    deliveredAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
     assignedUserId: "u-2"
   }
 ];

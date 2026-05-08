@@ -7,6 +7,8 @@ type AppLayoutProps = {
   userRole: UserRole;
   activeRoute: string;
   onNavigate: (route: string) => void;
+  sessionLabel?: string;
+  onLogout?: () => void;
   notificationCount?: number;
   urgentNotificationCount?: number;
 };
@@ -16,6 +18,8 @@ export function AppLayout({
   userRole,
   activeRoute,
   onNavigate,
+  sessionLabel,
+  onLogout,
   notificationCount = 0,
   urgentNotificationCount = 0
 }: AppLayoutProps) {
@@ -25,6 +29,8 @@ export function AppLayout({
         userRole={userRole}
         activeRoute={activeRoute}
         onNavigate={onNavigate}
+        sessionLabel={sessionLabel}
+        onLogout={onLogout}
         notificationCount={notificationCount}
         urgentNotificationCount={urgentNotificationCount}
       />

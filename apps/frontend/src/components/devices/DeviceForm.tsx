@@ -25,14 +25,11 @@ export function DeviceForm({
 }: DeviceFormProps) {
   const [values, setValues] = useState<DeviceFormValues>({
     name: initialValues.name ?? "",
-    serialNumber: initialValues.serialNumber ?? "",
     assignedUserId: initialValues.assignedUserId,
-    location: initialValues.location,
-    note: initialValues.note
   });
 
   const canSubmit = useMemo(
-    () => Boolean(values.name.trim() && values.serialNumber.trim()) && !disabled && !isSubmitting,
+    () => Boolean(values.name.trim()) && !disabled && !isSubmitting,
     [values, disabled, isSubmitting]
   );
 
@@ -54,10 +51,10 @@ export function DeviceForm({
         disabled={disabled || isSubmitting}
       />
       <input
-        placeholder="Serial number"
-        value={values.serialNumber}
-        onChange={(event) => setValues((previous) => ({ ...previous, serialNumber: event.target.value }))}
-        disabled={disabled || isSubmitting || mode === "edit"}
+        placeholder="Device name"
+        value={values.name}
+        onChange={(event) => setValues((previous) => ({ ...previous, name: event.target.value }))}
+        disabled={disabled || isSubmitting}
       />
       <select
         value={values.assignedUserId ?? ""}
@@ -71,18 +68,6 @@ export function DeviceForm({
           </option>
         ))}
       </select>
-      <input
-        placeholder="Location"
-        value={values.location ?? ""}
-        onChange={(event) => setValues((previous) => ({ ...previous, location: event.target.value || undefined }))}
-        disabled={disabled || isSubmitting}
-      />
-      <textarea
-        placeholder="Note"
-        value={values.note ?? ""}
-        onChange={(event) => setValues((previous) => ({ ...previous, note: event.target.value || undefined }))}
-        disabled={disabled || isSubmitting}
-      />
       {error ? <p role="alert">{error}</p> : null}
       <div className="row">
         <button type="submit" disabled={!canSubmit}>

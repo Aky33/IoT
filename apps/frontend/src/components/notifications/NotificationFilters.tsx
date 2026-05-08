@@ -39,7 +39,8 @@ export function NotificationFilters({
       >
         <option value="">All statuses</option>
         <option value="pending">Pending</option>
-        <option value="resolved">Resolved</option>
+        <option value="sent">Sent</option>
+        <option value="delivered">Delivered</option>
         <option value="cancelled">Cancelled</option>
         <option value="failed">Failed</option>
       </select>

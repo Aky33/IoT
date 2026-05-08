@@ -5,8 +5,6 @@ import { NotificationBadge } from "./NotificationBadge";
 type NotificationItemProps = {
   notification: Notification;
   userRole: UserRole;
-  onResolve?: (notificationId: string) => void;
-  onDelete?: (notificationId: string) => void;
   onOpenDetail?: (notificationId: string) => void;
   onOpenDeviceDetail?: (deviceId: string) => void;
   isProcessing?: boolean;
@@ -15,11 +13,9 @@ type NotificationItemProps = {
 export function NotificationItem({
   notification,
   userRole,
-  onResolve,
-  onDelete,
   onOpenDetail,
   onOpenDeviceDetail,
-  isProcessing = false
+    isProcessing: _isProcessing = false
 }: NotificationItemProps) {
   const isUrgentPending = notification.type === "urgent" && notification.status === "pending";
 
@@ -31,17 +27,7 @@ export function NotificationItem({
       </div>
       <small>{new Date(notification.createdAt).toLocaleString()}</small>
       <div className="row">
-        {notification.status === "pending" && onResolve ? (
-          <button disabled={isProcessing} onClick={() => onResolve(notification.id)}>
-            Resolve
-          </button>
-        ) : null}
         {onOpenDetail ? <button onClick={() => onOpenDetail(notification.id)}>Detail</button> : null}
-        {userRole === "admin" && onDelete ? (
-          <button disabled={isProcessing} onClick={() => onDelete(notification.id)}>
-            Delete
-          </button>
-        ) : null}
         {userRole === "admin" && onOpenDeviceDetail ? (
           <button onClick={() => onOpenDeviceDetail(notification.deviceId)}>Device</button>
         ) : null}

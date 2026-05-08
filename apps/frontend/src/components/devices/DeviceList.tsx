@@ -12,7 +12,6 @@ type DeviceListProps = {
   error?: string | null;
   onEdit?: (deviceId: string) => void;
   onDelete?: (deviceId: string) => void;
-  onPair?: (deviceId: string) => void;
   onOpenDetail?: (deviceId: string) => void;
 };
 
@@ -23,7 +22,6 @@ export function DeviceList({
   error = null,
   onEdit,
   onDelete,
-  onPair,
   onOpenDetail
 }: DeviceListProps) {
   if (isLoading) {
@@ -46,7 +44,6 @@ export function DeviceList({
           onOpenDetail={onOpenDetail}
           onEdit={onEdit}
           onDelete={onDelete}
-          onPair={onPair}
         />
       ))}
     </section>

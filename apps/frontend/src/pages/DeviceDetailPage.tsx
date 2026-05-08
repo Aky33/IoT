@@ -16,7 +16,6 @@ type DeviceDetailPageProps = {
   error?: string | null;
   onEdit?: (deviceId: string) => void;
   onDelete?: (deviceId: string) => void;
-  onPair?: (deviceId: string) => void;
 };
 
 export function DeviceDetailPage({
@@ -27,8 +26,7 @@ export function DeviceDetailPage({
   isLoading = false,
   error = null,
   onEdit,
-  onDelete,
-  onPair
+    onDelete
 }: DeviceDetailPageProps) {
   if (!deviceId) {
     return null;
@@ -56,7 +54,6 @@ export function DeviceDetailPage({
           <div className="row">
             {onEdit ? <button onClick={() => onEdit(device.id)}>Edit</button> : null}
             {onDelete ? <button onClick={() => onDelete(device.id)}>Delete</button> : null}
-            {onPair ? <button onClick={() => onPair(device.id)}>Pair</button> : null}
           </div>
         ) : null}
       </section>

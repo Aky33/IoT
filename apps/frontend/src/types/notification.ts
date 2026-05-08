@@ -7,7 +7,9 @@ export type Notification = {
   deviceId: string;
   deviceName: string;
   createdAt: string;
-  resolvedAt?: string;
+  sentAt?: string;
+  deliveredAt?: string;
+  cancelledAt?: string;
   assignedUserId?: string;
 };
 

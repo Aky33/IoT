@@ -10,8 +10,6 @@ type NotificationListProps = {
   userRole: UserRole;
   isLoading?: boolean;
   error?: string | null;
-  onResolve?: (notificationId: string) => void;
-  onDelete?: (notificationId: string) => void;
   onOpenDetail?: (notificationId: string) => void;
 };
 
@@ -20,8 +18,6 @@ export function NotificationList({
   userRole,
   isLoading = false,
   error = null,
-  onResolve,
-  onDelete,
   onOpenDetail
 }: NotificationListProps) {
   if (isLoading) {
@@ -43,8 +39,6 @@ export function NotificationList({
           key={notification.id}
           notification={notification}
           userRole={userRole}
-          onResolve={onResolve}
-          onDelete={userRole === "admin" ? onDelete : undefined}
           onOpenDetail={onOpenDetail}
         />
       ))}

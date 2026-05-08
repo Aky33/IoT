@@ -9,7 +9,6 @@ type DeviceCardProps = {
   onOpenDetail?: (deviceId: string) => void;
   onEdit?: (deviceId: string) => void;
   onDelete?: (deviceId: string) => void;
-  onPair?: (deviceId: string) => void;
   onDeactivate?: (deviceId: string) => void;
   isProcessing?: boolean;
 };
@@ -23,8 +22,8 @@ export function DeviceCard({ device, userRole, ...actions }: DeviceCardProps) {
         <strong>{device.name}</strong>
         <DeviceStatusIndicator status={device.status} lastSeenAt={device.lastSeenAt} />
       </div>
-      <small>Serial: {device.serialNumber}</small>
-      <small>Location: {device.location || "n/a"}</small>
+      <small>MAC: {device.macAddress || "n/a"}</small>
+      <small>Firmware: {device.firmwareVersion || "n/a"}</small>
       <DeviceActionsMenu device={device} userRole={userRole} {...actions} />
     </article>
   );

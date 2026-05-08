@@ -7,8 +7,6 @@ type NotificationDetailModalProps = {
   isOpen?: boolean;
   userRole: UserRole;
   onClose: () => void;
-  onResolve?: (notificationId: string) => void;
-  onDelete?: (notificationId: string) => void;
   onOpenDeviceDetail?: (deviceId: string) => void;
   isProcessing?: boolean;
 };
@@ -18,10 +16,8 @@ export function NotificationDetailModal({
   isOpen = false,
   userRole,
   onClose,
-  onResolve,
-  onDelete,
   onOpenDeviceDetail,
-  isProcessing = false
+    isProcessing: _isProcessing = false
 }: NotificationDetailModalProps) {
   if (!isOpen || !notification) {
     return null;
@@ -38,16 +34,6 @@ export function NotificationDetailModal({
         <p>Device: {notification.deviceName}</p>
         <p>Created: {new Date(notification.createdAt).toLocaleString()}</p>
         <div className="row">
-          {notification.status === "pending" && onResolve ? (
-            <button disabled={isProcessing} onClick={() => onResolve(notification.id)}>
-              Resolve
-            </button>
-          ) : null}
-          {userRole === "admin" && onDelete ? (
-            <button disabled={isProcessing} onClick={() => onDelete(notification.id)}>
-              Delete
-            </button>
-          ) : null}
           {userRole === "admin" && onOpenDeviceDetail ? (
             <button onClick={() => onOpenDeviceDetail(notification.deviceId)}>Open device</button>
           ) : null}

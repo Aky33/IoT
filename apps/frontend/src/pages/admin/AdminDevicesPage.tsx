@@ -13,7 +13,6 @@ type AdminDevicesPageProps = {
   onCreateDevice?: () => void;
   onEditDevice?: (deviceId: string) => void;
   onDeleteDevice?: (deviceId: string) => void;
-  onPairDevice?: (deviceId: string) => void;
   onOpenDeviceDetail?: (deviceId: string) => void;
 };
 
@@ -25,7 +24,6 @@ export function AdminDevicesPage({
   onCreateDevice,
   onEditDevice,
   onDeleteDevice,
-  onPairDevice,
   onOpenDeviceDetail
 }: AdminDevicesPageProps) {
   if (userRole !== "admin") {
@@ -45,7 +43,6 @@ export function AdminDevicesPage({
           userRole={userRole}
           onEdit={onEditDevice}
           onDelete={onDeleteDevice}
-          onPair={onPairDevice}
           onOpenDetail={onOpenDeviceDetail}
         />
       ) : null}
