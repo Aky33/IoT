@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AuthPage } from "./components/auth/AuthPage";
@@ -19,6 +19,7 @@ import {
   deleteDevice,
   disablePushNotifications,
   enablePushNotifications,
+  getAccessToken,
   getDevice,
   getPushEnabled,
   listDevices,
@@ -88,6 +89,8 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  const sseRef = useRef<EventSource | null>(null);
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -255,6 +258,56 @@ export default function App() {
     };
   }, [authStatus]);
 
+  // SSE stream — open for caregivers only, close on logout or auth change
+  useEffect(() => {
+    if (authStatus !== "authenticated" || currentUser?.role !== "caregiver") {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+      return;
+    }
+
+    const token = getAccessToken();
+    if (!token) return;
+
+    const url = `/notifications/stream?token=${encodeURIComponent(token)}`;
+    const source = new EventSource(url);
+    sseRef.current = source;
+
+    source.onmessage = (event) => {
+      try {
+        const incoming = JSON.parse(event.data as string) as {
+          id: string;
+          type: "standard" | "urgent";
+          deviceName?: string;
+          createdAt: string;
+        };
+        setNotifications((previous) => {
+          if (previous.some((n) => n.id === incoming.id)) return previous;
+          return [
+            {
+              id: incoming.id,
+              type: incoming.type,
+              status: "sent" as const,
+              deviceId: "",
+              deviceName: incoming.deviceName ?? "Unknown device",
+              createdAt: incoming.createdAt,
+            },
+            ...previous,
+          ];
+        });
+      } catch {
+        // Ignore malformed SSE events
+      }
+    };
+
+    return () => {
+      source.close();
+      sseRef.current = null;
+    };
+  }, [authStatus, currentUser?.role]);
+
   useEffect(() => {
     const match = location.pathname.match(/^\/devices\/([^/]+)$/);
 
@@ -343,6 +396,10 @@ export default function App() {
   }
 
   async function handleLogout() {
+    if (sseRef.current) {
+      sseRef.current.close();
+      sseRef.current = null;
+    }
     await logout();
     setCurrentUser(null);
     setAuthStatus("unauthenticated");

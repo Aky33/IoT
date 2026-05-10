@@ -26,6 +26,7 @@ export function DeviceForm({
   const [values, setValues] = useState<DeviceFormValues>({
     name: initialValues.name ?? "",
     assignedUserId: initialValues.assignedUserId,
+    caregiverId: initialValues.caregiverId,
   });
 
   const canSubmit = useMemo(
@@ -50,18 +51,24 @@ export function DeviceForm({
         onChange={(event) => setValues((previous) => ({ ...previous, name: event.target.value }))}
         disabled={disabled || isSubmitting}
       />
-      <input
-        placeholder="Device name"
-        value={values.name}
-        onChange={(event) => setValues((previous) => ({ ...previous, name: event.target.value }))}
-        disabled={disabled || isSubmitting}
-      />
       <select
         value={values.assignedUserId ?? ""}
         onChange={(event) => setValues((previous) => ({ ...previous, assignedUserId: event.target.value || undefined }))}
         disabled={disabled || isSubmitting || users.length === 0}
       >
-        <option value="">Assign user</option>
+        <option value="">Assign patient (userId)</option>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {user.name}
+          </option>
+        ))}
+      </select>
+      <select
+        value={values.caregiverId ?? ""}
+        onChange={(event) => setValues((previous) => ({ ...previous, caregiverId: event.target.value || undefined }))}
+        disabled={disabled || isSubmitting || users.length === 0}
+      >
+        <option value="">Assign caregiver (caregiverId)</option>
         {users.map((user) => (
           <option key={user.id} value={user.id}>
             {user.name}

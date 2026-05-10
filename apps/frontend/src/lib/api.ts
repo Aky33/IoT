@@ -91,13 +91,14 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const ONLINE_THRESHOLD_MS = 10 * 60 * 1000;
 
 let accessToken: string | null = null;
 
 function buildUrl(path: string, query?: Record<string, string | number | undefined>) {
-  const url = new URL(path, API_BASE_URL);
+  const base = API_BASE_URL || window.location.origin;
+  const url = new URL(path, base);
 
   if (query) {
     Object.entries(query).forEach(([key, value]) => {
@@ -283,12 +284,37 @@ function toDevicePayload(values: DeviceFormValues) {
   return {
     name: values.name,
     userId: values.assignedUserId || undefined,
+    caregiverId: values.caregiverId || undefined,
   };
 }
 
 function urlBase64ToUint8Array(value: string) {
   const decoded = decodeBase64Url(value);
   return Uint8Array.from(decoded, (character) => character.charCodeAt(0));
+}
+
+let _refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleTokenRefresh(token: string) {
+  if (_refreshTimer !== null) {
+    clearTimeout(_refreshTimer);
+    _refreshTimer = null;
+  }
+
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return;
+    const { exp } = JSON.parse(decodeBase64Url(payload)) as { exp?: number };
+    if (!exp) return;
+    const delay = exp * 1000 - Date.now() - 60_000; // 1 min before expiry
+    if (delay <= 0) return;
+    _refreshTimer = setTimeout(async () => {
+      const session = await refreshSession();
+      if (session && accessToken) scheduleTokenRefresh(accessToken);
+    }, delay);
+  } catch {
+    // Ignore parse errors
+  }
 }
 
 export function getAccessToken() {
@@ -308,6 +334,7 @@ export async function refreshSession() {
   }
 
   accessToken = result.accessToken;
+  scheduleTokenRefresh(result.accessToken);
   return parseSessionUser(result.accessToken);
 }
 
@@ -323,6 +350,7 @@ export async function login(email: string, password: string) {
   }
 
   accessToken = result.accessToken;
+  scheduleTokenRefresh(result.accessToken);
 
   const session = parseSessionUser(result.accessToken);
 
@@ -345,6 +373,7 @@ export async function register(payload: RegisterPayload) {
   }
 
   accessToken = result.accessToken;
+  scheduleTokenRefresh(result.accessToken);
 
   const session = parseSessionUser(result.accessToken);
 
@@ -356,7 +385,14 @@ export async function register(payload: RegisterPayload) {
 }
 
 export async function logout() {
+  if (_refreshTimer !== null) {
+    clearTimeout(_refreshTimer);
+    _refreshTimer = null;
+  }
+
   try {
+    // Best-effort push unsubscribe before invalidating the token
+    await disablePushNotifications().catch(() => undefined);
     await request<void>("/auth/logout", { method: "POST" }, { auth: false, retryOnUnauthorized: false });
   } finally {
     accessToken = null;
@@ -404,21 +440,12 @@ export async function deleteDevice(deviceId: string) {
 }
 
 export async function listNotifications(deviceId?: string) {
-  const result = await request<PaginatedResponse<BackendNotification>>("/notifications/all", {
-    method: "GET",
-  }, {
-    auth: true,
-    retryOnUnauthorized: true,
-    ignoreUnauthorized: false,
-  });
+  const result = await request<PaginatedResponse<BackendNotification>>(
+    buildUrl("/notifications/all", deviceId ? { deviceId } : undefined),
+    { method: "GET" },
+  );
 
-  const items = (result?.data ?? []).map(mapNotification);
-
-  if (!deviceId) {
-    return items;
-  }
-
-  return items.filter((notification) => notification.deviceId === deviceId);
+  return (result?.data ?? []).map(mapNotification);
 }
 
 export async function listUsers() {

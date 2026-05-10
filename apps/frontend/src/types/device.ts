@@ -16,4 +16,5 @@ export type Device = {
 export type DeviceFormValues = {
   name: string;
   assignedUserId?: string;
+  caregiverId?: string;
 };
