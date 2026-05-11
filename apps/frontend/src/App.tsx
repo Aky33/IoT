@@ -18,7 +18,6 @@ import { AdminDevicesPage } from "./pages/admin/AdminDevicesPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { DeviceDetailPage } from "./pages/DeviceDetailPage";
 import {
-  ApiError,
   type Caregiver,
   type CreatedDevice,
   createDevice,
@@ -33,11 +32,7 @@ import {
   listDevices,
   listNotifications,
   listUsers,
-  login,
-  logout,
   onTokenChange,
-  refreshSession,
-  register,
   type SessionUser,
   syncPushSubscription,
   createUser,
@@ -45,19 +40,13 @@ import {
   deleteUser,
   updateDevice,
 } from "./lib/api";
+import { getErrorMessage } from "./lib/error";
+import { useAuth } from "./hooks/useAuth";
 import type { Device, DeviceFormValues } from "./types/device";
 import type { NotificationFilters } from "./types/notification";
 import type { Notification } from "./types/notification";
 import type { UserRole } from "./types/common";
 import type { User, UserFormValues } from "./types/user";
-
-function getErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof ApiError || error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
-}
 
 type DeviceDetailRouteProps = {
   device: Device | null;
@@ -98,13 +87,7 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [authStatus, setAuthStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
-  const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-
   const sseRef = useRef<EventSource | null>(null);
-  const didRestoreSession = useRef(false);
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -238,28 +221,36 @@ export default function App() {
     setIsLoadingData(false);
   }
 
-  useEffect(() => {
-    if (didRestoreSession.current) return;
-    didRestoreSession.current = true;
-
-    (async () => {
-      try {
-        const session = await refreshSession();
-
-        if (!session) {
-          setAuthStatus("unauthenticated");
-          return;
-        }
-
-        setCurrentUser(session);
-        setAuthStatus("authenticated");
-        await loadAppData(session);
-      } catch (error) {
-        setAuthError(getErrorMessage(error, "Unable to restore the current session."));
-        setAuthStatus("unauthenticated");
+  const {
+    authStatus,
+    currentUser,
+    authError,
+    isAuthenticating,
+    login: handleLogin,
+    register: handleRegister,
+    logout: triggerLogout,
+  } = useAuth({
+    onAuthenticated: async (session) => {
+      await loadAppData(session);
+      navigate("/", { replace: true });
+    },
+    onLogout: () => {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
       }
-    })();
-  }, []);
+      setDevices([]);
+      setNotifications([]);
+      setUsers([]);
+      setCaregivers([]);
+      setNotificationFilters({});
+      setSelectedNotificationId(null);
+      setDeviceDetail(null);
+      setPushEnabled(false);
+      setPushError(null);
+      navigate("/", { replace: true });
+    },
+  });
 
   useEffect(() => {
     if (authStatus !== "authenticated") {
@@ -391,70 +382,6 @@ export default function App() {
       isCancelled = true;
     };
   }, [authStatus, devices, location.pathname]);
-
-  async function handleLogin(payload: { email: string; password: string }) {
-    setIsAuthenticating(true);
-    setAuthError(null);
-
-    try {
-      const session = await login(payload.email, payload.password);
-      setCurrentUser(session);
-      setAuthStatus("authenticated");
-      await loadAppData(session);
-      navigate("/", { replace: true });
-    } catch (error) {
-      setCurrentUser(null);
-      setAuthStatus("unauthenticated");
-      setAuthError(getErrorMessage(error, "Unable to sign in."));
-    } finally {
-      setIsAuthenticating(false);
-    }
-  }
-
-  async function handleRegister(payload: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    phone?: string;
-    invitationCode: string;
-  }) {
-    setIsAuthenticating(true);
-    setAuthError(null);
-
-    try {
-      const session = await register(payload);
-      setCurrentUser(session);
-      setAuthStatus("authenticated");
-      await loadAppData(session);
-      navigate("/", { replace: true });
-    } catch (error) {
-      setCurrentUser(null);
-      setAuthStatus("unauthenticated");
-      setAuthError(getErrorMessage(error, "Unable to create the account."));
-    } finally {
-      setIsAuthenticating(false);
-    }
-  }
-
-  async function handleLogout() {
-    if (sseRef.current) {
-      sseRef.current.close();
-      sseRef.current = null;
-    }
-    await logout();
-    setCurrentUser(null);
-    setAuthStatus("unauthenticated");
-    setDevices([]);
-    setNotifications([]);
-    setUsers([]);
-    setNotificationFilters({});
-    setSelectedNotificationId(null);
-    setDeviceDetail(null);
-    setPushEnabled(false);
-    setPushError(null);
-    navigate("/", { replace: true });
-  }
 
   async function handleCreateDevice(values: DeviceFormValues): Promise<CreatedDevice | undefined> {
     if (!currentUser) {
@@ -610,7 +537,7 @@ export default function App() {
         activeRoute={location.pathname}
         onNavigate={navigate}
         sessionLabel={currentUser.email ? `${currentUser.email} (${currentUser.role})` : currentUser.role}
-        onLogout={handleLogout}
+        onLogout={triggerLogout}
         notificationCount={notificationCount}
         urgentNotificationCount={urgentCount}
       >
