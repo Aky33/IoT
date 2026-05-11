@@ -5,6 +5,7 @@ import { LoadingState } from "../components/common/LoadingState";
 import { NotificationList } from "../components/notifications/NotificationList";
 import { UrgentNotificationAlert } from "../components/notifications/UrgentNotificationAlert";
 import type { UserRole } from "../types/common";
+import type { PushPermissionState } from "../lib/api";
 import type { DashboardSummary } from "../types/dashboard";
 import type { Notification } from "../types/notification";
 import type { Device } from "../types/device";
@@ -17,6 +18,9 @@ type DashboardPageProps = {
   devices?: Device[];
   isLoading?: boolean;
   error?: string | null;
+  pushPermission?: PushPermissionState;
+  pushEnabled?: boolean;
+  onEnablePush?: () => void;
 };
 
 export function DashboardPage({
@@ -26,7 +30,10 @@ export function DashboardPage({
   urgentNotifications = [],
   devices = [],
   isLoading = false,
-  error = null
+  error = null,
+  pushPermission = "default",
+  pushEnabled = false,
+  onEnablePush,
 }: DashboardPageProps) {
   if (isLoading) {
     return <LoadingState label="Loading dashboard..." />;
@@ -39,6 +46,24 @@ export function DashboardPage({
   return (
     <section className="page">
       <h2>Dashboard</h2>
+      {pushPermission === "default" && !pushEnabled ? (
+        <div className="panel" style={{ borderColor: "#2563eb", background: "#eff6ff", padding: "1rem" }}>
+          <strong>Zapněte si notifikace</strong>
+          <p>Bez povolených notifikací nebudete upozorněni na urgentní alerty, když nemáte aplikaci otevřenou.</p>
+          {onEnablePush ? (
+            <button type="button" onClick={onEnablePush}>Povolit notifikace</button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {pushPermission === "denied" ? (
+        <div role="alert" className="panel" style={{ borderColor: "#b91c1c", background: "#fef2f2", padding: "1rem" }}>
+          <strong>Notifikace jsou zablokované</strong>
+          <p>Prohlížeč blokuje notifikace — můžete přijít o urgentní alerty.</p>
+          <p><small>Klikněte na ikonu zámku 🔒 vlevo v adresním řádku → Oprávnění webu → Notifikace → Povolit.</small></p>
+        </div>
+      ) : null}
+
       <StatusSummaryCards {...summary} userRole={userRole} />
       {urgentNotifications[0] ? (
         <UrgentNotificationAlert

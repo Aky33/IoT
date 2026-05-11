@@ -7,7 +7,6 @@ type DeviceActionsMenuProps = {
   onOpenDetail?: (deviceId: string) => void;
   onEdit?: (deviceId: string) => void;
   onDelete?: (deviceId: string) => void;
-  onDeactivate?: (deviceId: string) => void;
   isProcessing?: boolean;
 };
 
@@ -17,7 +16,6 @@ export function DeviceActionsMenu({
   onOpenDetail,
   onEdit,
   onDelete,
-  onDeactivate,
   isProcessing = false
 }: DeviceActionsMenuProps) {
   return (
@@ -25,11 +23,6 @@ export function DeviceActionsMenu({
       {onOpenDetail ? <button onClick={() => onOpenDetail(device.id)}>Detail</button> : null}
       {userRole === "admin" && onEdit ? <button disabled={isProcessing} onClick={() => onEdit(device.id)}>Edit</button> : null}
       {userRole === "admin" && onDelete ? <button disabled={isProcessing} onClick={() => onDelete(device.id)}>Delete</button> : null}
-      {userRole === "admin" && onDeactivate ? (
-        <button disabled={isProcessing} onClick={() => onDeactivate(device.id)}>
-          Deactivate
-        </button>
-      ) : null}
     </div>
   );
 }

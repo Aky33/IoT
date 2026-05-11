@@ -23,7 +23,10 @@ export function Navbar({
     { key: "/", label: "Dashboard" },
     { key: "/notifications", label: `Notifications (${notificationCount})` },
     { key: "/settings", label: "Settings" },
-    ...(userRole === "admin" ? [{ key: "/admin/devices", label: "Admin Devices" }] : [])
+    ...(userRole === "admin" ? [
+      { key: "/admin/devices", label: "Devices" },
+      { key: "/admin/users", label: "Patients" },
+    ] : [])
   ];
 
   return (

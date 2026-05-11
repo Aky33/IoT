@@ -27,22 +27,30 @@ export async function createFromDevicePress(device, type) {
   const deviceDoc = await Device.findById(device.id);
   const deviceName = deviceDoc?.name || 'Neznámé zařízení';
 
-  let status = 'sent';
+  let pushOk = false;
   if (caregiver.pushSubscription?.endpoint) {
-    const pushed = await sendPush(caregiver._id, caregiver.pushSubscription, {
+    pushOk = await sendPush(caregiver._id, caregiver.pushSubscription, {
       id: notification.id,
       type,
       deviceName,
     });
-    if (!pushed) status = 'failed';
   }
 
-  emit(device.caregiverId.toString(), {
+  const sseDelivered = emit(device.caregiverId.toString(), {
     id: notification.id,
     type,
     deviceName,
     createdAt: notification.createdAt,
   });
+
+  let status;
+  if (pushOk) {
+    status = 'sent';
+  } else if (sseDelivered) {
+    status = 'sent';
+  } else {
+    status = 'failed';
+  }
 
   const updated = await notificationRepository.update(notification.id, {
     status,

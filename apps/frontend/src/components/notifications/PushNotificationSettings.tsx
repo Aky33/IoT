@@ -1,11 +1,13 @@
 type PushNotificationSettingsProps = {
   enabled?: boolean;
   onToggleEnabled?: (value: boolean) => void;
+  disabled?: boolean;
 };
 
 export function PushNotificationSettings({
-  enabled = true,
+  enabled = false,
   onToggleEnabled,
+  disabled = false,
 }: PushNotificationSettingsProps) {
   return (
     <section className="panel stack">
@@ -14,6 +16,7 @@ export function PushNotificationSettings({
         <input
           type="checkbox"
           checked={enabled}
+          disabled={disabled}
           onChange={(event) => onToggleEnabled?.(event.target.checked)}
         />
         Enable push notifications

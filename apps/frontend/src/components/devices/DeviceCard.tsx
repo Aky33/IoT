@@ -9,12 +9,11 @@ type DeviceCardProps = {
   onOpenDetail?: (deviceId: string) => void;
   onEdit?: (deviceId: string) => void;
   onDelete?: (deviceId: string) => void;
-  onDeactivate?: (deviceId: string) => void;
   isProcessing?: boolean;
 };
 
 export function DeviceCard({ device, userRole, ...actions }: DeviceCardProps) {
-  const needsHighlight = device.status === "offline" || device.status === "error";
+  const needsHighlight = device.status === "offline";
 
   return (
     <article className="panel stack" style={needsHighlight ? { borderColor: "#f59e0b" } : undefined}>

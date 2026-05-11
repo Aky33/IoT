@@ -4,8 +4,8 @@ import type { Notification } from "../types/notification";
 import type { User } from "../types/user";
 
 export const mockUsers: User[] = [
-  { id: "u-1", name: "Admin User", role: "admin", email: "admin@iot.local" },
-  { id: "u-2", name: "Caregiver User", role: "caregiver", email: "caregiver@iot.local" }
+  { id: "u-1", firstName: "Jan", lastName: "Novák", name: "Jan Novák" },
+  { id: "u-2", firstName: "Karel", lastName: "Dvořák", name: "Karel Dvořák", notes: "Potřebuje asistenci" },
 ];
 
 export const mockDevices: Device[] = [

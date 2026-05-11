@@ -1,6 +1,6 @@
 import type { Device, DeviceFormValues } from "../types/device";
 import type { Notification } from "../types/notification";
-import type { User } from "../types/user";
+import type { User, UserFormValues } from "../types/user";
 import type { UserRole } from "../types/common";
 
 type RequestOptions = Omit<RequestInit, "body"> & {
@@ -35,6 +35,7 @@ type BackendDevice = {
   firmwareVersion?: string;
   lastSeenAt?: string;
   createdAt: string;
+  deviceSecret?: string;
 };
 
 type BackendNotification = {
@@ -54,6 +55,7 @@ type BackendUser = {
   id: string;
   firstName: string;
   lastName: string;
+  notes?: string;
 };
 
 type SessionPayload = {
@@ -95,6 +97,22 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const ONLINE_THRESHOLD_MS = 10 * 60 * 1000;
 
 let accessToken: string | null = null;
+let _tokenVersion = 0;
+const _tokenListeners = new Set<() => void>();
+
+export function getTokenVersion() {
+  return _tokenVersion;
+}
+
+export function onTokenChange(listener: () => void) {
+  _tokenListeners.add(listener);
+  return () => { _tokenListeners.delete(listener); };
+}
+
+function notifyTokenChange() {
+  _tokenVersion++;
+  _tokenListeners.forEach((fn) => fn());
+}
 
 function buildUrl(path: string, query?: Record<string, string | number | undefined>) {
   const base = API_BASE_URL || window.location.origin;
@@ -162,7 +180,6 @@ function mapDevice(device: BackendDevice): Device {
     lastSeenAt: device.lastSeenAt,
     createdAt: device.createdAt,
     status,
-    ledStatus: status === "online" ? "idle" : "error",
   };
 }
 
@@ -195,6 +212,7 @@ function mapUser(user: BackendUser): User {
     firstName: user.firstName,
     lastName: user.lastName,
     name: `${user.firstName} ${user.lastName}`.trim(),
+    notes: user.notes,
   };
 }
 
@@ -294,6 +312,7 @@ function urlBase64ToUint8Array(value: string) {
 }
 
 let _refreshTimer: ReturnType<typeof setTimeout> | null = null;
+let _refreshPromise: Promise<SessionUser | null> | null = null;
 
 function scheduleTokenRefresh(token: string) {
   if (_refreshTimer !== null) {
@@ -322,20 +341,29 @@ export function getAccessToken() {
 }
 
 export async function refreshSession() {
-  const result = await request<AuthResponse>(
-    "/auth/refresh",
-    { method: "POST" },
-    { auth: false, retryOnUnauthorized: false, ignoreUnauthorized: true },
-  );
+  if (_refreshPromise) return _refreshPromise;
 
-  if (!result?.accessToken) {
-    accessToken = null;
-    return null;
-  }
+  _refreshPromise = (async () => {
+    const result = await request<AuthResponse>(
+      "/auth/refresh",
+      { method: "POST" },
+      { auth: false, retryOnUnauthorized: false, ignoreUnauthorized: true },
+    );
 
-  accessToken = result.accessToken;
-  scheduleTokenRefresh(result.accessToken);
-  return parseSessionUser(result.accessToken);
+    if (!result?.accessToken) {
+      accessToken = null;
+      return null;
+    }
+
+    accessToken = result.accessToken;
+    notifyTokenChange();
+    scheduleTokenRefresh(result.accessToken);
+    return parseSessionUser(result.accessToken);
+  })().finally(() => {
+    _refreshPromise = null;
+  });
+
+  return _refreshPromise;
 }
 
 export async function login(email: string, password: string) {
@@ -350,6 +378,7 @@ export async function login(email: string, password: string) {
   }
 
   accessToken = result.accessToken;
+  notifyTokenChange();
   scheduleTokenRefresh(result.accessToken);
 
   const session = parseSessionUser(result.accessToken);
@@ -373,6 +402,7 @@ export async function register(payload: RegisterPayload) {
   }
 
   accessToken = result.accessToken;
+  notifyTokenChange();
   scheduleTokenRefresh(result.accessToken);
 
   const session = parseSessionUser(result.accessToken);
@@ -400,7 +430,9 @@ export async function logout() {
 }
 
 export async function listDevices() {
-  const result = await request<PaginatedResponse<BackendDevice>>("/devices/all");
+  const result = await request<PaginatedResponse<BackendDevice>>(
+    buildUrl("/devices/all", { pageSize: 200 }),
+  );
   return (result?.data ?? []).map(mapDevice);
 }
 
@@ -409,7 +441,9 @@ export async function getDevice(deviceId: string) {
   return result ? mapDevice(result) : null;
 }
 
-export async function createDevice(values: DeviceFormValues) {
+export type CreatedDevice = Device & { deviceSecret: string };
+
+export async function createDevice(values: DeviceFormValues): Promise<CreatedDevice> {
   const result = await request<BackendDevice>("/devices/create", {
     method: "POST",
     body: toDevicePayload(values),
@@ -419,7 +453,7 @@ export async function createDevice(values: DeviceFormValues) {
     throw new ApiError("Backend did not return the created device.", 500);
   }
 
-  return mapDevice(result);
+  return { ...mapDevice(result), deviceSecret: result.deviceSecret ?? "" };
 }
 
 export async function updateDevice(deviceId: string, values: DeviceFormValues) {
@@ -439,28 +473,115 @@ export async function deleteDevice(deviceId: string) {
   await request<void>(`/devices/delete/${deviceId}`, { method: "DELETE" });
 }
 
-export async function listNotifications(deviceId?: string) {
+type NotificationQueryParams = {
+  deviceId?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export async function listNotifications(params: NotificationQueryParams = {}) {
   const result = await request<PaginatedResponse<BackendNotification>>(
-    buildUrl("/notifications/all", deviceId ? { deviceId } : undefined),
+    buildUrl("/notifications/all", {
+      pageSize: params.pageSize ?? 200,
+      page: params.page,
+      deviceId: params.deviceId,
+    }),
     { method: "GET" },
   );
 
-  return (result?.data ?? []).map(mapNotification);
+  return {
+    data: (result?.data ?? []).map(mapNotification),
+    meta: result?.meta ?? { page: 1, pageSize: 200, total: 0 },
+  };
 }
 
 export async function listUsers() {
-  const result = await request<PaginatedResponse<BackendUser>>("/users/all");
+  const result = await request<PaginatedResponse<BackendUser>>(
+    buildUrl("/users/all", { pageSize: 200 }),
+  );
   return (result?.data ?? []).map(mapUser);
 }
 
-export async function getPushEnabled() {
+export async function createUser(values: UserFormValues) {
+  const result = await request<BackendUser>("/users/create", {
+    method: "POST",
+    body: values,
+  });
+  if (!result) {
+    throw new ApiError("Backend did not return the created user.", 500);
+  }
+  return mapUser(result);
+}
+
+export async function updateUser(userId: string, values: UserFormValues) {
+  const result = await request<BackendUser>(`/users/edit/${userId}`, {
+    method: "PUT",
+    body: values,
+  });
+  if (!result) {
+    throw new ApiError("Backend did not return the updated user.", 500);
+  }
+  return mapUser(result);
+}
+
+export async function deleteUser(userId: string) {
+  await request<void>(`/users/delete/${userId}`, { method: "DELETE" });
+}
+
+type BackendCaregiver = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
+export type Caregiver = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export async function listCaregivers() {
+  const result = await request<PaginatedResponse<BackendCaregiver>>(
+    buildUrl("/caregivers/all", { pageSize: 200 }),
+  );
+  return (result?.data ?? []).map((c): Caregiver => ({
+    id: c.id,
+    name: `${c.firstName} ${c.lastName}`.trim(),
+    email: c.email,
+  }));
+}
+
+export type PushPermissionState = "granted" | "denied" | "default" | "unsupported";
+
+export async function getPushState(): Promise<{ permission: PushPermissionState; subscribed: boolean }> {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+    return { permission: "unsupported", subscribed: false };
+  }
+
+  const permission = Notification.permission as PushPermissionState;
+  const registration = await navigator.serviceWorker.register("/sw.js");
+  const subscription = await registration.pushManager.getSubscription();
+
+  return { permission, subscribed: Boolean(subscription) };
+}
+
+export async function syncPushSubscription() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     return false;
   }
 
   const registration = await navigator.serviceWorker.register("/sw.js");
   const subscription = await registration.pushManager.getSubscription();
-  return Boolean(subscription);
+
+  if (!subscription) return false;
+
+  const { endpoint, keys } = subscription.toJSON();
+  await request("/push/subscribe", {
+    method: "POST",
+    body: { endpoint, keys },
+  });
+  return true;
 }
 
 export async function enablePushNotifications() {
@@ -490,9 +611,10 @@ export async function enablePushNotifications() {
     });
   }
 
+  const { endpoint, keys } = subscription.toJSON();
   await request("/push/subscribe", {
     method: "POST",
-    body: subscription.toJSON(),
+    body: { endpoint, keys },
   });
 }
 

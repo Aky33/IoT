@@ -8,35 +8,48 @@ import { CreateDeviceModal } from "./components/devices/CreateDeviceModal";
 import { DeleteDeviceConfirmDialog } from "./components/devices/DeleteDeviceConfirmDialog";
 import { EditDeviceModal } from "./components/devices/EditDeviceModal";
 import { NotificationDetailModal } from "./components/notifications/NotificationDetailModal";
+import { CreateUserModal } from "./components/users/CreateUserModal";
+import { EditUserModal } from "./components/users/EditUserModal";
+import { DeleteUserConfirmDialog } from "./components/users/DeleteUserConfirmDialog";
 import { DashboardPage } from "./pages/DashboardPage";
 import { NotificationHistoryPage } from "./pages/NotificationHistoryPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { AdminDevicesPage } from "./pages/admin/AdminDevicesPage";
+import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { DeviceDetailPage } from "./pages/DeviceDetailPage";
 import {
   ApiError,
+  type Caregiver,
+  type CreatedDevice,
   createDevice,
   deleteDevice,
   disablePushNotifications,
   enablePushNotifications,
   getAccessToken,
   getDevice,
-  getPushEnabled,
+  getPushState,
+  type PushPermissionState,
+  listCaregivers,
   listDevices,
   listNotifications,
   listUsers,
   login,
   logout,
+  onTokenChange,
   refreshSession,
   register,
   type SessionUser,
+  syncPushSubscription,
+  createUser,
+  updateUser,
+  deleteUser,
   updateDevice,
 } from "./lib/api";
 import type { Device, DeviceFormValues } from "./types/device";
 import type { NotificationFilters } from "./types/notification";
 import type { Notification } from "./types/notification";
 import type { UserRole } from "./types/common";
-import type { User } from "./types/user";
+import type { User, UserFormValues } from "./types/user";
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError || error instanceof Error) {
@@ -91,10 +104,12 @@ export default function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const sseRef = useRef<EventSource | null>(null);
+  const didRestoreSession = useRef(false);
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
   const [notificationFilters, setNotificationFilters] = useState<NotificationFilters>({});
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [devicesError, setDevicesError] = useState<string | null>(null);
@@ -112,7 +127,14 @@ export default function App() {
   const [deviceMutationError, setDeviceMutationError] = useState<string | null>(null);
   const [isMutatingDevice, setIsMutatingDevice] = useState(false);
 
-  const [pushEnabled, setPushEnabled] = useState(true);
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [userMutationError, setUserMutationError] = useState<string | null>(null);
+  const [isMutatingUser, setIsMutatingUser] = useState(false);
+
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushPermission, setPushPermission] = useState<PushPermissionState>("default");
   const [pushError, setPushError] = useState<string | null>(null);
 
   const filteredNotifications = useMemo(
@@ -142,6 +164,16 @@ export default function App() {
     [deletingDeviceId, deviceDetail, devices],
   );
 
+  const editingUser = useMemo(
+    () => users.find((u) => u.id === editingUserId) ?? null,
+    [users, editingUserId],
+  );
+
+  const deletingUser = useMemo(
+    () => users.find((u) => u.id === deletingUserId) ?? null,
+    [users, deletingUserId],
+  );
+
   const selectedNotification = useMemo(
     () => notifications.find((notification) => notification.id === selectedNotificationId) ?? null,
     [notifications, selectedNotificationId],
@@ -169,10 +201,11 @@ export default function App() {
     setNotificationsError(null);
     setUsersError(null);
 
-    const [devicesResult, notificationsResult, usersResult] = await Promise.allSettled([
+    const [devicesResult, notificationsResult, usersResult, caregiversResult] = await Promise.allSettled([
       listDevices(),
       listNotifications(),
       sessionUser.role === "admin" ? listUsers() : Promise.resolve([]),
+      sessionUser.role === "admin" ? listCaregivers() : Promise.resolve([]),
     ]);
 
     if (devicesResult.status === "fulfilled") {
@@ -183,7 +216,7 @@ export default function App() {
     }
 
     if (notificationsResult.status === "fulfilled") {
-      setNotifications(notificationsResult.value);
+      setNotifications(notificationsResult.value.data);
     } else {
       setNotifications([]);
       setNotificationsError(getErrorMessage(notificationsResult.reason, "Unable to load notifications."));
@@ -196,19 +229,22 @@ export default function App() {
       setUsersError(getErrorMessage(usersResult.reason, "Unable to load users."));
     }
 
+    if (caregiversResult.status === "fulfilled") {
+      setCaregivers(caregiversResult.value);
+    } else {
+      setCaregivers([]);
+    }
+
     setIsLoadingData(false);
   }
 
   useEffect(() => {
-    let isCancelled = false;
+    if (didRestoreSession.current) return;
+    didRestoreSession.current = true;
 
     (async () => {
       try {
         const session = await refreshSession();
-
-        if (isCancelled) {
-          return;
-        }
 
         if (!session) {
           setAuthStatus("unauthenticated");
@@ -219,46 +255,52 @@ export default function App() {
         setAuthStatus("authenticated");
         await loadAppData(session);
       } catch (error) {
-        if (!isCancelled) {
-          setAuthError(getErrorMessage(error, "Unable to restore the current session."));
-          setAuthStatus("unauthenticated");
-        }
+        setAuthError(getErrorMessage(error, "Unable to restore the current session."));
+        setAuthStatus("unauthenticated");
       }
     })();
-
-    return () => {
-      isCancelled = true;
-    };
   }, []);
 
   useEffect(() => {
     if (authStatus !== "authenticated") {
       setPushEnabled(false);
+      setPushPermission("default");
       return;
     }
 
-    let isCancelled = false;
-
     (async () => {
       try {
-        const enabled = await getPushEnabled();
+        const state = await getPushState();
+        setPushPermission(state.permission);
 
-        if (!isCancelled) {
-          setPushEnabled(enabled);
-        }
-      } catch {
-        if (!isCancelled) {
+        if (state.permission === "granted" && state.subscribed) {
+          // Prohlížeč povolil + subscription existuje → sync s backendem
+          await syncPushSubscription();
+          setPushEnabled(true);
+        } else if (state.permission === "granted" && !state.subscribed) {
+          // Prohlížeč povolil, ale subscription chybí → vytvořit
+          await enablePushNotifications();
+          setPushEnabled(true);
+        } else if (state.permission === "denied") {
+          // Prohlížeč blokuje → vyčistit stale subscription z DB
+          await disablePushNotifications().catch(() => undefined);
+          setPushEnabled(false);
+        } else {
           setPushEnabled(false);
         }
+      } catch {
+        setPushEnabled(false);
       }
     })();
-
-    return () => {
-      isCancelled = true;
-    };
   }, [authStatus]);
 
-  // SSE stream — open for caregivers only, close on logout or auth change
+  const [tokenVersion, setTokenVersion] = useState(0);
+
+  useEffect(() => {
+    return onTokenChange(() => setTokenVersion((v) => v + 1));
+  }, []);
+
+  // SSE stream — open for caregivers only, reconnect on token refresh
   useEffect(() => {
     if (authStatus !== "authenticated" || currentUser?.role !== "caregiver") {
       if (sseRef.current) {
@@ -289,7 +331,7 @@ export default function App() {
             {
               id: incoming.id,
               type: incoming.type,
-              status: "sent" as const,
+              status: "pending" as const,
               deviceId: "",
               deviceName: incoming.deviceName ?? "Unknown device",
               createdAt: incoming.createdAt,
@@ -306,7 +348,7 @@ export default function App() {
       source.close();
       sseRef.current = null;
     };
-  }, [authStatus, currentUser?.role]);
+  }, [authStatus, currentUser?.role, tokenVersion]);
 
   useEffect(() => {
     const match = location.pathname.match(/^\/devices\/([^/]+)$/);
@@ -414,18 +456,18 @@ export default function App() {
     navigate("/", { replace: true });
   }
 
-  async function handleCreateDevice(values: DeviceFormValues) {
+  async function handleCreateDevice(values: DeviceFormValues): Promise<CreatedDevice | undefined> {
     if (!currentUser) {
-      return;
+      return undefined;
     }
 
     setIsMutatingDevice(true);
     setDeviceMutationError(null);
 
     try {
-      await createDevice(values);
-      setIsCreateModalOpen(false);
+      const created = await createDevice(values);
       await loadAppData(currentUser);
+      return created;
     } catch (error) {
       setDeviceMutationError(getErrorMessage(error, "Unable to create the device."));
     } finally {
@@ -476,18 +518,69 @@ export default function App() {
     }
   }
 
+  async function handleCreateUser(values: UserFormValues) {
+    if (!currentUser) return;
+    setIsMutatingUser(true);
+    setUserMutationError(null);
+    try {
+      await createUser(values);
+      setIsCreateUserModalOpen(false);
+      await loadAppData(currentUser);
+    } catch (error) {
+      setUserMutationError(getErrorMessage(error, "Unable to create patient."));
+    } finally {
+      setIsMutatingUser(false);
+    }
+  }
+
+  async function handleUpdateUser(userId: string, values: UserFormValues) {
+    if (!currentUser) return;
+    setIsMutatingUser(true);
+    setUserMutationError(null);
+    try {
+      await updateUser(userId, values);
+      setEditingUserId(null);
+      await loadAppData(currentUser);
+    } catch (error) {
+      setUserMutationError(getErrorMessage(error, "Unable to update patient."));
+    } finally {
+      setIsMutatingUser(false);
+    }
+  }
+
+  async function handleDeleteUser(userId: string) {
+    if (!currentUser) return;
+    setIsMutatingUser(true);
+    setUserMutationError(null);
+    try {
+      await deleteUser(userId);
+      setDeletingUserId(null);
+      await loadAppData(currentUser);
+    } catch (error) {
+      setUserMutationError(getErrorMessage(error, "Unable to delete patient."));
+    } finally {
+      setIsMutatingUser(false);
+    }
+  }
+
   async function handleTogglePush(nextEnabled: boolean) {
     setPushError(null);
 
     try {
       if (nextEnabled) {
         await enablePushNotifications();
+        setPushPermission("granted");
       } else {
         await disablePushNotifications();
       }
 
       setPushEnabled(nextEnabled);
     } catch (error) {
+      const state = await getPushState().catch(() => null);
+      if (state) {
+        setPushPermission(state.permission);
+        setPushEnabled(state.subscribed);
+      }
       setPushError(getErrorMessage(error, "Unable to update push notifications."));
     }
   }
@@ -534,6 +627,9 @@ export default function App() {
                   devices={devices}
                   isLoading={isLoadingData}
                   error={devicesError ?? notificationsError}
+                  pushPermission={pushPermission}
+                  pushEnabled={pushEnabled}
+                  onEnablePush={() => handleTogglePush(true)}
                 />
               </ProtectedRoute>
             }
@@ -585,6 +681,7 @@ export default function App() {
                   <SettingsPage
                     userRole={currentUser.role}
                     pushEnabled={pushEnabled}
+                    pushPermission={pushPermission}
                     onTogglePush={handleTogglePush}
                   />
                   {pushError ? <p role="alert" style={{ color: "#b91c1c" }}>{pushError}</p> : null}
@@ -622,6 +719,34 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin"]}
+                userRole={currentUser.role}
+              >
+                <AdminUsersPage
+                  userRole={currentUser.role}
+                  users={users}
+                  isLoading={isLoadingData}
+                  error={usersError}
+                  onCreateUser={() => {
+                    setUserMutationError(null);
+                    setIsCreateUserModalOpen(true);
+                  }}
+                  onEditUser={(userId) => {
+                    setUserMutationError(null);
+                    setEditingUserId(userId);
+                  }}
+                  onDeleteUser={(userId) => {
+                    setUserMutationError(null);
+                    setDeletingUserId(userId);
+                  }}
+                />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppLayout>
@@ -629,6 +754,7 @@ export default function App() {
       <CreateDeviceModal
         isOpen={isCreateModalOpen}
         users={users}
+        caregivers={caregivers}
         onClose={() => {
           setIsCreateModalOpen(false);
           setDeviceMutationError(null);
@@ -642,6 +768,7 @@ export default function App() {
         device={editingDevice}
         isOpen={Boolean(editingDeviceId)}
         users={users}
+        caregivers={caregivers}
         onClose={() => {
           setEditingDeviceId(null);
           setDeviceMutationError(null);
@@ -661,6 +788,41 @@ export default function App() {
         onConfirm={handleDeleteDevice}
         isDeleting={isMutatingDevice}
         error={deviceMutationError}
+      />
+
+      <CreateUserModal
+        isOpen={isCreateUserModalOpen}
+        onClose={() => {
+          setIsCreateUserModalOpen(false);
+          setUserMutationError(null);
+        }}
+        onCreate={handleCreateUser}
+        isSubmitting={isMutatingUser}
+        error={userMutationError}
+      />
+
+      <EditUserModal
+        user={editingUser}
+        isOpen={Boolean(editingUserId)}
+        onClose={() => {
+          setEditingUserId(null);
+          setUserMutationError(null);
+        }}
+        onUpdate={handleUpdateUser}
+        isSubmitting={isMutatingUser}
+        error={userMutationError}
+      />
+
+      <DeleteUserConfirmDialog
+        user={deletingUser}
+        isOpen={Boolean(deletingUserId)}
+        onClose={() => {
+          setDeletingUserId(null);
+          setUserMutationError(null);
+        }}
+        onConfirm={handleDeleteUser}
+        isDeleting={isMutatingUser}
+        error={userMutationError}
       />
 
       <NotificationDetailModal

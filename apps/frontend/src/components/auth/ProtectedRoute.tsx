@@ -14,16 +14,28 @@ export function ProtectedRoute({
   allowedRoles,
   userRole,
   children,
-  fallback = null,
+  fallback,
   redirectTo
 }: ProtectedRouteProps) {
   const location = useLocation();
 
-  if (!userRole || !allowedRoles.includes(userRole)) {
+  if (!userRole) {
     if (redirectTo) {
       return <Navigate to={redirectTo} state={{ from: location }} replace />;
     }
-    return <>{fallback}</>;
+    return null;
+  }
+
+  if (!allowedRoles.includes(userRole)) {
+    if (fallback) {
+      return <>{fallback}</>;
+    }
+    return (
+      <div role="alert" style={{ padding: "2rem", textAlign: "center" }}>
+        <h2>Access denied</h2>
+        <p>You do not have permission to view this page.</p>
+      </div>
+    );
   }
 
   return <>{children}</>;

@@ -24,5 +24,5 @@ export function subscribe(caregiverId, res) {
 }
 
 export function emit(caregiverId, notification) {
-  emitter.emit(caregiverId, notification);
+  return emitter.emit(caregiverId, notification);
 }

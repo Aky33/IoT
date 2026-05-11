@@ -1,11 +1,13 @@
 import type { Device, DeviceFormValues } from "../../types/device";
 import type { User } from "../../types/user";
+import type { Caregiver } from "../../lib/api";
 import { DeviceForm } from "./DeviceForm";
 
 type EditDeviceModalProps = {
   device: Device | null;
   isOpen?: boolean;
   users?: User[];
+  caregivers?: Caregiver[];
   onClose: () => void;
   onUpdate: (deviceId: string, values: DeviceFormValues) => void;
   isSubmitting?: boolean;
@@ -16,6 +18,7 @@ export function EditDeviceModal({
   device,
   isOpen = false,
   users = [],
+  caregivers = [],
   onClose,
   onUpdate,
   isSubmitting = false,
@@ -32,6 +35,7 @@ export function EditDeviceModal({
           mode="edit"
           initialValues={device}
           users={users}
+          caregivers={caregivers}
           onSubmit={(values) => onUpdate(device.id, values)}
           onCancel={onClose}
           isSubmitting={isSubmitting}

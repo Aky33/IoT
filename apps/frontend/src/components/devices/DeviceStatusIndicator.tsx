@@ -18,8 +18,6 @@ export function DeviceStatusIndicator({
   const colorMap: Record<DeviceStatus, string> = {
     online: "#10b981",
     offline: "#f59e0b",
-    unpaired: "#f59e0b",
-    error: "#dc2626"
   };
 
   return (
