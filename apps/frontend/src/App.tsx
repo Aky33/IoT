@@ -1,6 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { usePushNotifications } from "./hooks/usePushNotifications";
-import { useSSE } from "./hooks/useSSE";
+import { useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AuthPage } from "./components/auth/AuthPage";
@@ -19,30 +17,17 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { AdminDevicesPage } from "./pages/admin/AdminDevicesPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { DeviceDetailPage } from "./pages/DeviceDetailPage";
-import {
-  type Caregiver,
-  type CreatedDevice,
-  createDevice,
-  deleteDevice,
-  getDevice,
-  listCaregivers,
-  listDevices,
-  listNotifications,
-  listUsers,
-  type SessionUser,
-  createUser,
-  updateUser,
-  deleteUser,
-  updateDevice,
-} from "./lib/api";
-import { getErrorMessage } from "./lib/error";
+import { createDevice, deleteDevice, createUser, updateUser, deleteUser, updateDevice } from "./lib/api";
 import { useAuth } from "./hooks/useAuth";
+import { useAppData } from "./hooks/useAppData";
 import { useCrud } from "./hooks/useCrud";
+import { usePushNotifications } from "./hooks/usePushNotifications";
+import { useSSE } from "./hooks/useSSE";
 import type { Device, DeviceFormValues } from "./types/device";
 import type { NotificationFilters } from "./types/notification";
 import type { Notification } from "./types/notification";
 import type { UserRole } from "./types/common";
-import type { User, UserFormValues } from "./types/user";
+import type { UserFormValues } from "./types/user";
 
 type DeviceDetailRouteProps = {
   device: Device | null;
@@ -83,20 +68,7 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
   const [notificationFilters, setNotificationFilters] = useState<NotificationFilters>({});
-  const [isLoadingData, setIsLoadingData] = useState(false);
-  const [devicesError, setDevicesError] = useState<string | null>(null);
-  const [notificationsError, setNotificationsError] = useState<string | null>(null);
-  const [usersError, setUsersError] = useState<string | null>(null);
-
-  const [deviceDetail, setDeviceDetail] = useState<Device | null>(null);
-  const [isLoadingDeviceDetail, setIsLoadingDeviceDetail] = useState(false);
-  const [deviceDetailError, setDeviceDetailError] = useState<string | null>(null);
-
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
@@ -105,106 +77,7 @@ export default function App() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
-  const filteredNotifications = useMemo(
-    () =>
-      notifications.filter((notification) => {
-        if (notificationFilters.type && notification.type !== notificationFilters.type) {
-          return false;
-        }
-        if (notificationFilters.status && notification.status !== notificationFilters.status) {
-          return false;
-        }
-        if (notificationFilters.deviceId && notification.deviceId !== notificationFilters.deviceId) {
-          return false;
-        }
-        return true;
-      }),
-    [notificationFilters, notifications]
-  );
-
-  const editingDevice = useMemo(
-    () => devices.find((device) => device.id === editingDeviceId) ?? (deviceDetail?.id === editingDeviceId ? deviceDetail : null),
-    [deviceDetail, devices, editingDeviceId],
-  );
-
-  const deletingDevice = useMemo(
-    () => devices.find((device) => device.id === deletingDeviceId) ?? (deviceDetail?.id === deletingDeviceId ? deviceDetail : null),
-    [deletingDeviceId, deviceDetail, devices],
-  );
-
-  const editingUser = useMemo(
-    () => users.find((u) => u.id === editingUserId) ?? null,
-    [users, editingUserId],
-  );
-
-  const deletingUser = useMemo(
-    () => users.find((u) => u.id === deletingUserId) ?? null,
-    [users, deletingUserId],
-  );
-
-  const selectedNotification = useMemo(
-    () => notifications.find((notification) => notification.id === selectedNotificationId) ?? null,
-    [notifications, selectedNotificationId],
-  );
-
-  const summary = useMemo(
-    () => ({
-      activeDevicesCount: devices.filter((device) => device.status === "online").length,
-      offlineDevicesCount: devices.filter((device) => device.status !== "online").length,
-      pendingNotificationsCount: notifications.filter((notification) => notification.status === "pending").length,
-      urgentNotificationsCount: notifications.filter((notification) => notification.type === "urgent" && notification.status === "pending").length,
-    }),
-    [devices, notifications],
-  );
-
-  const latestNotifications = useMemo(() => notifications.slice(0, 5), [notifications]);
-  const urgentNotifications = useMemo(
-    () => notifications.filter((notification) => notification.type === "urgent" && notification.status === "pending"),
-    [notifications],
-  );
-
-  async function loadAppData(sessionUser: SessionUser) {
-    setIsLoadingData(true);
-    setDevicesError(null);
-    setNotificationsError(null);
-    setUsersError(null);
-
-    const [devicesResult, notificationsResult, usersResult, caregiversResult] = await Promise.allSettled([
-      listDevices(),
-      listNotifications(),
-      sessionUser.role === "admin" ? listUsers() : Promise.resolve([]),
-      sessionUser.role === "admin" ? listCaregivers() : Promise.resolve([]),
-    ]);
-
-    if (devicesResult.status === "fulfilled") {
-      setDevices(devicesResult.value);
-    } else {
-      setDevices([]);
-      setDevicesError(getErrorMessage(devicesResult.reason, "Unable to load devices."));
-    }
-
-    if (notificationsResult.status === "fulfilled") {
-      setNotifications(notificationsResult.value.data);
-    } else {
-      setNotifications([]);
-      setNotificationsError(getErrorMessage(notificationsResult.reason, "Unable to load notifications."));
-    }
-
-    if (usersResult.status === "fulfilled") {
-      setUsers(usersResult.value);
-    } else {
-      setUsers([]);
-      setUsersError(getErrorMessage(usersResult.reason, "Unable to load users."));
-    }
-
-    if (caregiversResult.status === "fulfilled") {
-      setCaregivers(caregiversResult.value);
-    } else {
-      setCaregivers([]);
-    }
-
-    setIsLoadingData(false);
-  }
+  const appDataRef = { loadAppData: async (_s: any) => {}, resetData: () => {}, addNotification: (_n: Notification) => {} };
 
   const {
     authStatus,
@@ -216,74 +89,73 @@ export default function App() {
     logout: triggerLogout,
   } = useAuth({
     onAuthenticated: async (session) => {
-      await loadAppData(session);
+      await appDataRef.loadAppData(session);
       navigate("/", { replace: true });
     },
     onLogout: () => {
-      setDevices([]);
-      setNotifications([]);
-      setUsers([]);
-      setCaregivers([]);
+      appDataRef.resetData();
       setNotificationFilters({});
       setSelectedNotificationId(null);
-      setDeviceDetail(null);
       navigate("/", { replace: true });
     },
   });
+
+  const {
+    devices, notifications, users, caregivers,
+    isLoadingData, devicesError, notificationsError, usersError,
+    deviceDetail, isLoadingDeviceDetail, deviceDetailError,
+    loadAppData, addNotification, resetData,
+  } = useAppData(authStatus, location.pathname);
+
+  appDataRef.loadAppData = loadAppData;
+  appDataRef.resetData = resetData;
+  appDataRef.addNotification = addNotification;
 
   const deviceCrud = useCrud(async () => { if (currentUser) await loadAppData(currentUser); });
   const userCrud = useCrud(async () => { if (currentUser) await loadAppData(currentUser); });
 
   const { pushEnabled, pushPermission, pushError, togglePush } = usePushNotifications(authStatus);
 
-  useSSE(authStatus, currentUser?.role, (notification) => {
-    setNotifications((prev) => {
-      if (prev.some((n) => n.id === notification.id)) return prev;
-      return [notification, ...prev];
-    });
-  });
+  useSSE(authStatus, currentUser?.role, addNotification);
 
-  useEffect(() => {
-    const match = location.pathname.match(/^\/devices\/([^/]+)$/);
+  const filteredNotifications = useMemo(
+    () =>
+      notifications.filter((notification) => {
+        if (notificationFilters.type && notification.type !== notificationFilters.type) return false;
+        if (notificationFilters.status && notification.status !== notificationFilters.status) return false;
+        if (notificationFilters.deviceId && notification.deviceId !== notificationFilters.deviceId) return false;
+        return true;
+      }),
+    [notificationFilters, notifications],
+  );
 
-    if (!match || authStatus !== "authenticated") {
-      setDeviceDetail(null);
-      setDeviceDetailError(null);
-      setIsLoadingDeviceDetail(false);
-      return;
-    }
+  const editingDevice = useMemo(
+    () => devices.find((d) => d.id === editingDeviceId) ?? (deviceDetail?.id === editingDeviceId ? deviceDetail : null),
+    [deviceDetail, devices, editingDeviceId],
+  );
+  const deletingDevice = useMemo(
+    () => devices.find((d) => d.id === deletingDeviceId) ?? (deviceDetail?.id === deletingDeviceId ? deviceDetail : null),
+    [deletingDeviceId, deviceDetail, devices],
+  );
+  const editingUser = useMemo(() => users.find((u) => u.id === editingUserId) ?? null, [users, editingUserId]);
+  const deletingUser = useMemo(() => users.find((u) => u.id === deletingUserId) ?? null, [users, deletingUserId]);
+  const selectedNotification = useMemo(
+    () => notifications.find((n) => n.id === selectedNotificationId) ?? null,
+    [notifications, selectedNotificationId],
+  );
 
-    const deviceId = match[1];
-    const cachedDevice = devices.find((device) => device.id === deviceId) ?? null;
-    let isCancelled = false;
+  const summary = useMemo(() => ({
+    activeDevicesCount: devices.filter((d) => d.status === "online").length,
+    offlineDevicesCount: devices.filter((d) => d.status !== "online").length,
+    pendingNotificationsCount: notifications.filter((n) => n.status === "pending").length,
+    urgentNotificationsCount: notifications.filter((n) => n.type === "urgent" && n.status === "pending").length,
+  }), [devices, notifications]);
 
-    setDeviceDetail(cachedDevice);
-    setDeviceDetailError(null);
-    setIsLoadingDeviceDetail(true);
-
-    (async () => {
-      try {
-        const loadedDevice = await getDevice(deviceId);
-
-        if (!isCancelled) {
-          setDeviceDetail(loadedDevice);
-        }
-      } catch (error) {
-        if (!isCancelled) {
-          setDeviceDetail(null);
-          setDeviceDetailError(getErrorMessage(error, "Unable to load device detail."));
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingDeviceDetail(false);
-        }
-      }
-    })();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [authStatus, devices, location.pathname]);
+  const latestNotifications = useMemo(() => notifications.slice(0, 5), [notifications]);
+  const urgentNotifications = useMemo(
+    () => notifications.filter((n) => n.type === "urgent" && n.status === "pending"),
+    [notifications],
+  );
 
   if (authStatus === "loading") {
     return <LoadingState label="Restoring session..." />;
