@@ -21,7 +21,7 @@ export function UrgentNotificationAlert({
   }
 
   return (
-    <section className="panel stack" style={{ borderColor: "#dc2626", borderWidth: 2 }}>
+    <section className="panel card-strong stack">
       <h3>Urgent alert</h3>
       <p>{notification.deviceName}</p>
       <div className="row">

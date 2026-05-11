@@ -17,7 +17,7 @@ export function SettingsPage({ userRole, pushEnabled = false, pushPermission = "
       <p>Current role: {userRole}</p>
 
       {pushPermission === "default" && !pushEnabled ? (
-        <div className="panel" style={{ borderColor: "#2563eb", background: "#eff6ff", padding: "1rem" }}>
+        <div className="panel banner banner-info">
           <strong>Zapněte si notifikace</strong>
           <p>Bez povolených notifikací nebudete upozorněni na urgentní alerty, když nemáte aplikaci otevřenou.</p>
           <p><small>Klikněte na checkbox níže — prohlížeč se vás zeptá na povolení.</small></p>
@@ -25,7 +25,7 @@ export function SettingsPage({ userRole, pushEnabled = false, pushPermission = "
       ) : null}
 
       {pushPermission === "denied" ? (
-        <div role="alert" className="panel" style={{ borderColor: "#b91c1c", background: "#fef2f2", padding: "1rem" }}>
+        <div role="alert" className="panel banner banner-danger">
           <strong>Notifikace jsou zablokované</strong>
           <p>Prohlížeč blokuje notifikace pro tuto stránku. Můžete přijít o urgentní alerty.</p>
           <p><small>Povolte notifikace v nastavení prohlížeče (ikona zámku v adresním řádku).</small></p>
@@ -33,7 +33,7 @@ export function SettingsPage({ userRole, pushEnabled = false, pushPermission = "
       ) : null}
 
       {pushPermission === "unsupported" ? (
-        <div role="alert" className="panel" style={{ borderColor: "#f59e0b", background: "#fffbeb", padding: "1rem" }}>
+        <div role="alert" className="panel banner banner-warning">
           <strong>Push notifikace nejsou podporované</strong>
           <p>Tento prohlížeč nepodporuje Web Push. Notifikace budou fungovat pouze při otevřené aplikaci.</p>
         </div>

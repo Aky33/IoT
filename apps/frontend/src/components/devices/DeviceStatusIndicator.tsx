@@ -16,8 +16,8 @@ export function DeviceStatusIndicator({
   tooltip
 }: DeviceStatusIndicatorProps) {
   const colorMap: Record<DeviceStatus, string> = {
-    online: "#10b981",
-    offline: "#f59e0b",
+    online: "var(--color-success)",
+    offline: "var(--color-warning)",
   };
 
   return (

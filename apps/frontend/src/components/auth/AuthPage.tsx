@@ -141,7 +141,7 @@ export function AuthPage({
           </form>
         )}
 
-        {error ? <p role="alert" style={{ color: "#b91c1c" }}>{error}</p> : null}
+        {error ? <p role="alert" style={{ color: "var(--color-danger-border)" }}>{error}</p> : null}
       </div>
     </section>
   );

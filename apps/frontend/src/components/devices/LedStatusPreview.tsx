@@ -16,11 +16,11 @@ export function LedStatusPreview({
   description
 }: LedStatusPreviewProps) {
   const colorMap: Record<LedStatus, string> = {
-    idle: "#9ca3af",
-    sending: "#3b82f6",
-    success: "#10b981",
-    error: "#dc2626",
-    urgent: "#f97316"
+    idle: "var(--color-idle)",
+    sending: "var(--color-sending)",
+    success: "var(--color-success)",
+    error: "var(--color-danger)",
+    urgent: "var(--color-urgent)",
   };
 
   return (
@@ -33,7 +33,7 @@ export function LedStatusPreview({
           height: "0.9rem",
           borderRadius: "999px",
           background: colorMap[status],
-          boxShadow: animated && status === "sending" ? "0 0 0.5rem #3b82f6" : "none"
+          boxShadow: animated && status === "sending" ? "0 0 0.5rem var(--color-sending)" : "none"
         }}
       />
       {showLabel ? <strong>{status}</strong> : null}

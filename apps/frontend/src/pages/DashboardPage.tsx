@@ -47,7 +47,7 @@ export function DashboardPage({
     <section className="page">
       <h2>Dashboard</h2>
       {pushPermission === "default" && !pushEnabled ? (
-        <div className="panel" style={{ borderColor: "#2563eb", background: "#eff6ff", padding: "1rem" }}>
+        <div className="panel banner banner-info">
           <strong>Zapněte si notifikace</strong>
           <p>Bez povolených notifikací nebudete upozorněni na urgentní alerty, když nemáte aplikaci otevřenou.</p>
           {onEnablePush ? (
@@ -57,7 +57,7 @@ export function DashboardPage({
       ) : null}
 
       {pushPermission === "denied" ? (
-        <div role="alert" className="panel" style={{ borderColor: "#b91c1c", background: "#fef2f2", padding: "1rem" }}>
+        <div role="alert" className="panel banner banner-danger">
           <strong>Notifikace jsou zablokované</strong>
           <p>Prohlížeč blokuje notifikace — můžete přijít o urgentní alerty.</p>
           <p><small>Klikněte na ikonu zámku 🔒 vlevo v adresním řádku → Oprávnění webu → Notifikace → Povolit.</small></p>
