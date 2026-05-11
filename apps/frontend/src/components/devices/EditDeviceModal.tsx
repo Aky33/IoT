@@ -2,6 +2,7 @@ import type { Device, DeviceFormValues } from "../../types/device";
 import type { User } from "../../types/user";
 import type { Caregiver } from "../../lib/api";
 import { DeviceForm } from "./DeviceForm";
+import { Modal } from "../common/Modal";
 
 type EditDeviceModalProps = {
   device: Device | null;
@@ -24,13 +25,9 @@ export function EditDeviceModal({
   isSubmitting = false,
   error = null
 }: EditDeviceModalProps) {
-  if (!isOpen || !device) {
-    return null;
-  }
-
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal">
+    <Modal isOpen={isOpen} onClose={onClose}>
+      {device && (
         <DeviceForm
           mode="edit"
           initialValues={device}
@@ -41,7 +38,7 @@ export function EditDeviceModal({
           isSubmitting={isSubmitting}
           error={error}
         />
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 }

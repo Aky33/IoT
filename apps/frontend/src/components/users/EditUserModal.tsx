@@ -1,5 +1,6 @@
 import type { User, UserFormValues } from "../../types/user";
 import { UserForm } from "./UserForm";
+import { Modal } from "../common/Modal";
 
 type EditUserModalProps = {
   user: User | null;
@@ -18,11 +19,9 @@ export function EditUserModal({
   isSubmitting = false,
   error = null,
 }: EditUserModalProps) {
-  if (!isOpen || !user) return null;
-
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal">
+    <Modal isOpen={isOpen} onClose={onClose}>
+      {user && (
         <UserForm
           mode="edit"
           initialValues={user}
@@ -31,7 +30,7 @@ export function EditUserModal({
           isSubmitting={isSubmitting}
           error={error}
         />
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 }

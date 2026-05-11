@@ -1,5 +1,6 @@
 import type { UserFormValues } from "../../types/user";
 import { UserForm } from "./UserForm";
+import { Modal } from "../common/Modal";
 
 type CreateUserModalProps = {
   isOpen?: boolean;
@@ -16,19 +17,15 @@ export function CreateUserModal({
   isSubmitting = false,
   error = null,
 }: CreateUserModalProps) {
-  if (!isOpen) return null;
-
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal">
-        <UserForm
-          mode="create"
-          onSubmit={onCreate}
-          onCancel={onClose}
-          isSubmitting={isSubmitting}
-          error={error}
-        />
-      </div>
-    </div>
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <UserForm
+        mode="create"
+        onSubmit={onCreate}
+        onCancel={onClose}
+        isSubmitting={isSubmitting}
+        error={error}
+      />
+    </Modal>
   );
 }
