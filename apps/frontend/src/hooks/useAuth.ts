@@ -9,7 +9,7 @@ import {
 import { getErrorMessage } from "../lib/error";
 
 type UseAuthOptions = {
-  onAuthenticated: (session: SessionUser) => Promise<void>;
+  onAuthenticated: (session: SessionUser) => void;
   onLogout: () => void;
 };
 
@@ -35,7 +35,8 @@ export function useAuth({ onAuthenticated, onLogout }: UseAuthOptions) {
 
         setCurrentUser(session);
         setAuthStatus("authenticated");
-        await onAuthenticated(session);
+        // On session restore, don't navigate — user may already be on a deep route.
+        // React Query will auto-fetch because enabled becomes true.
       } catch (error) {
         setAuthError(getErrorMessage(error, "Unable to restore the current session."));
         setAuthStatus("unauthenticated");
@@ -51,7 +52,7 @@ export function useAuth({ onAuthenticated, onLogout }: UseAuthOptions) {
       const session = await apiLogin(payload.email, payload.password);
       setCurrentUser(session);
       setAuthStatus("authenticated");
-      await onAuthenticated(session);
+      onAuthenticated(session);
     } catch (error) {
       setCurrentUser(null);
       setAuthStatus("unauthenticated");
@@ -76,7 +77,7 @@ export function useAuth({ onAuthenticated, onLogout }: UseAuthOptions) {
       const session = await apiRegister(payload);
       setCurrentUser(session);
       setAuthStatus("authenticated");
-      await onAuthenticated(session);
+      onAuthenticated(session);
     } catch (error) {
       setCurrentUser(null);
       setAuthStatus("unauthenticated");

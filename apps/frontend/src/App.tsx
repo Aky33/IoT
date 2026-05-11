@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AuthPage } from "./components/auth/AuthPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -17,17 +18,16 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { AdminDevicesPage } from "./pages/admin/AdminDevicesPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { DeviceDetailPage } from "./pages/DeviceDetailPage";
-import { createDevice, deleteDevice, createUser, updateUser, deleteUser, updateDevice } from "./lib/api";
 import { useAuth } from "./hooks/useAuth";
-import { useAppData } from "./hooks/useAppData";
-import { useCrud } from "./hooks/useCrud";
+import { useDevicesQuery, useDeviceDetailQuery, useCreateDevice, useUpdateDevice, useDeleteDevice } from "./hooks/useDevicesQuery";
+import { useNotificationsQuery } from "./hooks/useNotificationsQuery";
+import { useUsersQuery, useCaregiversQuery, useCreateUser, useUpdateUser, useDeleteUser } from "./hooks/useUsersQuery";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 import { useSSE } from "./hooks/useSSE";
-import type { Device, DeviceFormValues } from "./types/device";
+import type { Device } from "./types/device";
 import type { NotificationFilters } from "./types/notification";
 import type { Notification } from "./types/notification";
 import type { UserRole } from "./types/common";
-import type { UserFormValues } from "./types/user";
 
 type DeviceDetailRouteProps = {
   device: Device | null;
@@ -67,6 +67,7 @@ function DeviceDetailRoute({
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
+  const qc = useQueryClient();
 
   const [notificationFilters, setNotificationFilters] = useState<NotificationFilters>({});
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
@@ -77,8 +78,6 @@ export default function App() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
-  const appDataRef = { loadAppData: async (_s: any) => {}, resetData: () => {}, addNotification: (_n: Notification) => {} };
-
   const {
     authStatus,
     currentUser,
@@ -88,35 +87,43 @@ export default function App() {
     register: handleRegister,
     logout: triggerLogout,
   } = useAuth({
-    onAuthenticated: async (session) => {
-      await appDataRef.loadAppData(session);
+    onAuthenticated: () => {
       navigate("/", { replace: true });
     },
     onLogout: () => {
-      appDataRef.resetData();
+      qc.clear();
       setNotificationFilters({});
       setSelectedNotificationId(null);
       navigate("/", { replace: true });
     },
   });
 
-  const {
-    devices, notifications, users, caregivers,
-    isLoadingData, devicesError, notificationsError, usersError,
-    deviceDetail, isLoadingDeviceDetail, deviceDetailError,
-    loadAppData, addNotification, resetData,
-  } = useAppData(authStatus, location.pathname);
+  const isAuthenticated = authStatus === "authenticated";
+  const isAdmin = currentUser?.role === "admin";
 
-  appDataRef.loadAppData = loadAppData;
-  appDataRef.resetData = resetData;
-  appDataRef.addNotification = addNotification;
+  const { data: devices = [], isLoading: isLoadingDevices, error: devicesError } = useDevicesQuery(isAuthenticated);
+  const { data: notifications = [], isLoading: isLoadingNotifications, error: notificationsError } = useNotificationsQuery(isAuthenticated);
+  const { data: users = [], isLoading: isLoadingUsers, error: usersError } = useUsersQuery(isAuthenticated && isAdmin);
+  const { data: caregivers = [] } = useCaregiversQuery(isAuthenticated && isAdmin);
 
-  const deviceCrud = useCrud(async () => { if (currentUser) await loadAppData(currentUser); });
-  const userCrud = useCrud(async () => { if (currentUser) await loadAppData(currentUser); });
+  const deviceDetailMatch = location.pathname.match(/^\/devices\/([^/]+)$/);
+  const { data: deviceDetail = null, isLoading: isLoadingDeviceDetail, error: deviceDetailError } = useDeviceDetailQuery(
+    deviceDetailMatch?.[1],
+    isAuthenticated,
+  );
+
+  const createDeviceMutation = useCreateDevice();
+  const updateDeviceMutation = useUpdateDevice();
+  const deleteDeviceMutation = useDeleteDevice();
+  const createUserMutation = useCreateUser();
+  const updateUserMutation = useUpdateUser();
+  const deleteUserMutation = useDeleteUser();
 
   const { pushEnabled, pushPermission, pushError, togglePush } = usePushNotifications(authStatus);
 
-  useSSE(authStatus, currentUser?.role, addNotification);
+  useSSE(authStatus, currentUser?.role);
+
+  const isLoadingData = isLoadingDevices || isLoadingNotifications || isLoadingUsers;
 
   const filteredNotifications = useMemo(
     () =>
@@ -198,7 +205,7 @@ export default function App() {
                   urgentNotifications={urgentNotifications}
                   devices={devices}
                   isLoading={isLoadingData}
-                  error={devicesError ?? notificationsError}
+                  error={devicesError?.message ?? notificationsError?.message ?? null}
                   pushPermission={pushPermission}
                   pushEnabled={pushEnabled}
                   onEnablePush={() => togglePush(true)}
@@ -216,7 +223,7 @@ export default function App() {
                   filters={notificationFilters}
                   devices={devices}
                   isLoading={isLoadingData}
-                  error={notificationsError ?? devicesError}
+                  error={notificationsError?.message ?? devicesError?.message ?? null}
                   onFilterChange={setNotificationFilters}
                   onOpenDetail={setSelectedNotificationId}
                 />
@@ -230,15 +237,15 @@ export default function App() {
                 <DeviceDetailRoute
                   device={deviceDetail}
                   isLoading={isLoadingDeviceDetail}
-                  error={deviceDetailError}
+                  error={deviceDetailError?.message ?? null}
                   userRole={currentUser.role}
                   notifications={notifications}
                   onEdit={currentUser.role === "admin" ? (deviceId) => {
-                    deviceCrud.clearError();
+                    updateDeviceMutation.reset();
                     setEditingDeviceId(deviceId);
                   } : undefined}
                   onDelete={currentUser.role === "admin" ? (deviceId) => {
-                    deviceCrud.clearError();
+                    deleteDeviceMutation.reset();
                     setDeletingDeviceId(deviceId);
                   } : undefined}
                 />
@@ -273,17 +280,17 @@ export default function App() {
                   userRole={currentUser.role}
                   devices={devices}
                   isLoading={isLoadingData}
-                  error={devicesError ?? usersError}
+                  error={devicesError?.message ?? usersError?.message ?? null}
                   onCreateDevice={() => {
-                    deviceCrud.clearError();
+                    createDeviceMutation.reset();
                     setIsCreateModalOpen(true);
                   }}
                   onEditDevice={(deviceId) => {
-                    deviceCrud.clearError();
+                    updateDeviceMutation.reset();
                     setEditingDeviceId(deviceId);
                   }}
                   onDeleteDevice={(deviceId) => {
-                    deviceCrud.clearError();
+                    deleteDeviceMutation.reset();
                     setDeletingDeviceId(deviceId);
                   }}
                   onOpenDeviceDetail={(id) => navigate(`/devices/${id}`)}
@@ -302,17 +309,17 @@ export default function App() {
                   userRole={currentUser.role}
                   users={users}
                   isLoading={isLoadingData}
-                  error={usersError}
+                  error={usersError?.message ?? null}
                   onCreateUser={() => {
-                    userCrud.clearError();
+                    createUserMutation.reset();
                     setIsCreateUserModalOpen(true);
                   }}
                   onEditUser={(userId) => {
-                    userCrud.clearError();
+                    updateUserMutation.reset();
                     setEditingUserId(userId);
                   }}
                   onDeleteUser={(userId) => {
-                    userCrud.clearError();
+                    deleteUserMutation.reset();
                     setDeletingUserId(userId);
                   }}
                 />
@@ -329,11 +336,17 @@ export default function App() {
         caregivers={caregivers}
         onClose={() => {
           setIsCreateModalOpen(false);
-          deviceCrud.clearError();
+          createDeviceMutation.reset();
         }}
-        onCreate={(values) => deviceCrud.run(() => createDevice(values), "Unable to create device.")}
-        isSubmitting={deviceCrud.isMutating}
-        error={deviceCrud.error}
+        onCreate={async (values) => {
+          try {
+            return await createDeviceMutation.mutateAsync(values);
+          } catch {
+            return undefined;
+          }
+        }}
+        isSubmitting={createDeviceMutation.isPending}
+        error={createDeviceMutation.error?.message ?? null}
       />
 
       <EditDeviceModal
@@ -343,15 +356,17 @@ export default function App() {
         caregivers={caregivers}
         onClose={() => {
           setEditingDeviceId(null);
-          deviceCrud.clearError();
+          updateDeviceMutation.reset();
         }}
         onUpdate={(id, values) => {
-          deviceCrud.run(() => updateDevice(id, values), "Unable to update device.").then((r) => {
-            if (r) setEditingDeviceId(null);
+          updateDeviceMutation.mutateAsync({ id, values }).then(() => {
+            setEditingDeviceId(null);
+          }).catch(() => {
+            // error is captured by mutation state
           });
         }}
-        isSubmitting={deviceCrud.isMutating}
-        error={deviceCrud.error}
+        isSubmitting={updateDeviceMutation.isPending}
+        error={updateDeviceMutation.error?.message ?? null}
       />
 
       <DeleteDeviceConfirmDialog
@@ -359,26 +374,35 @@ export default function App() {
         isOpen={Boolean(deletingDeviceId)}
         onClose={() => {
           setDeletingDeviceId(null);
-          deviceCrud.clearError();
+          deleteDeviceMutation.reset();
         }}
-        onConfirm={(id) => deviceCrud.run(async () => { await deleteDevice(id); if (location.pathname === `/devices/${id}`) navigate("/admin/devices"); }, "Unable to delete device.").then((r) => {
-          if (r !== undefined) setDeletingDeviceId(null);
-        })}
-        isDeleting={deviceCrud.isMutating}
-        error={deviceCrud.error}
+        onConfirm={(id) => {
+          deleteDeviceMutation.mutateAsync(id).then(() => {
+            if (location.pathname === `/devices/${id}`) navigate("/admin/devices");
+            setDeletingDeviceId(null);
+          }).catch(() => {
+            // error is captured by mutation state
+          });
+        }}
+        isDeleting={deleteDeviceMutation.isPending}
+        error={deleteDeviceMutation.error?.message ?? null}
       />
 
       <CreateUserModal
         isOpen={isCreateUserModalOpen}
         onClose={() => {
           setIsCreateUserModalOpen(false);
-          userCrud.clearError();
+          createUserMutation.reset();
         }}
-        onCreate={(values) => userCrud.run(() => createUser(values), "Unable to create patient.").then((r) => {
-          if (r !== undefined) setIsCreateUserModalOpen(false);
-        })}
-        isSubmitting={userCrud.isMutating}
-        error={userCrud.error}
+        onCreate={(values) => {
+          createUserMutation.mutateAsync(values).then(() => {
+            setIsCreateUserModalOpen(false);
+          }).catch(() => {
+            // error is captured by mutation state
+          });
+        }}
+        isSubmitting={createUserMutation.isPending}
+        error={createUserMutation.error?.message ?? null}
       />
 
       <EditUserModal
@@ -386,15 +410,17 @@ export default function App() {
         isOpen={Boolean(editingUserId)}
         onClose={() => {
           setEditingUserId(null);
-          userCrud.clearError();
+          updateUserMutation.reset();
         }}
         onUpdate={(id, values) => {
-          userCrud.run(() => updateUser(id, values), "Unable to update patient.").then((r) => {
-            if (r !== undefined) setEditingUserId(null);
+          updateUserMutation.mutateAsync({ id, values }).then(() => {
+            setEditingUserId(null);
+          }).catch(() => {
+            // error is captured by mutation state
           });
         }}
-        isSubmitting={userCrud.isMutating}
-        error={userCrud.error}
+        isSubmitting={updateUserMutation.isPending}
+        error={updateUserMutation.error?.message ?? null}
       />
 
       <DeleteUserConfirmDialog
@@ -402,13 +428,17 @@ export default function App() {
         isOpen={Boolean(deletingUserId)}
         onClose={() => {
           setDeletingUserId(null);
-          userCrud.clearError();
+          deleteUserMutation.reset();
         }}
-        onConfirm={(id) => userCrud.run(() => deleteUser(id), "Unable to delete patient.").then((r) => {
-          if (r !== undefined) setDeletingUserId(null);
-        })}
-        isDeleting={userCrud.isMutating}
-        error={userCrud.error}
+        onConfirm={(id) => {
+          deleteUserMutation.mutateAsync(id).then(() => {
+            setDeletingUserId(null);
+          }).catch(() => {
+            // error is captured by mutation state
+          });
+        }}
+        isDeleting={deleteUserMutation.isPending}
+        error={deleteUserMutation.error?.message ?? null}
       />
 
       <NotificationDetailModal
