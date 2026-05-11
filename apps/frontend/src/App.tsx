@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePushNotifications } from "./hooks/usePushNotifications";
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AuthPage } from "./components/auth/AuthPage";
@@ -22,19 +23,14 @@ import {
   type CreatedDevice,
   createDevice,
   deleteDevice,
-  disablePushNotifications,
-  enablePushNotifications,
   getAccessToken,
   getDevice,
-  getPushState,
-  type PushPermissionState,
   listCaregivers,
   listDevices,
   listNotifications,
   listUsers,
   onTokenChange,
   type SessionUser,
-  syncPushSubscription,
   createUser,
   updateUser,
   deleteUser,
@@ -115,10 +111,6 @@ export default function App() {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [userMutationError, setUserMutationError] = useState<string | null>(null);
   const [isMutatingUser, setIsMutatingUser] = useState(false);
-
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushPermission, setPushPermission] = useState<PushPermissionState>("default");
-  const [pushError, setPushError] = useState<string | null>(null);
 
   const filteredNotifications = useMemo(
     () =>
@@ -246,44 +238,11 @@ export default function App() {
       setNotificationFilters({});
       setSelectedNotificationId(null);
       setDeviceDetail(null);
-      setPushEnabled(false);
-      setPushError(null);
       navigate("/", { replace: true });
     },
   });
 
-  useEffect(() => {
-    if (authStatus !== "authenticated") {
-      setPushEnabled(false);
-      setPushPermission("default");
-      return;
-    }
-
-    (async () => {
-      try {
-        const state = await getPushState();
-        setPushPermission(state.permission);
-
-        if (state.permission === "granted" && state.subscribed) {
-          // Prohlížeč povolil + subscription existuje → sync s backendem
-          await syncPushSubscription();
-          setPushEnabled(true);
-        } else if (state.permission === "granted" && !state.subscribed) {
-          // Prohlížeč povolil, ale subscription chybí → vytvořit
-          await enablePushNotifications();
-          setPushEnabled(true);
-        } else if (state.permission === "denied") {
-          // Prohlížeč blokuje → vyčistit stale subscription z DB
-          await disablePushNotifications().catch(() => undefined);
-          setPushEnabled(false);
-        } else {
-          setPushEnabled(false);
-        }
-      } catch {
-        setPushEnabled(false);
-      }
-    })();
-  }, [authStatus]);
+  const { pushEnabled, pushPermission, pushError, togglePush } = usePushNotifications(authStatus);
 
   const [tokenVersion, setTokenVersion] = useState(0);
 
@@ -490,28 +449,6 @@ export default function App() {
     }
   }
 
-  async function handleTogglePush(nextEnabled: boolean) {
-    setPushError(null);
-
-    try {
-      if (nextEnabled) {
-        await enablePushNotifications();
-        setPushPermission("granted");
-      } else {
-        await disablePushNotifications();
-      }
-
-      setPushEnabled(nextEnabled);
-    } catch (error) {
-      const state = await getPushState().catch(() => null);
-      if (state) {
-        setPushPermission(state.permission);
-        setPushEnabled(state.subscribed);
-      }
-      setPushError(getErrorMessage(error, "Unable to update push notifications."));
-    }
-  }
-
   if (authStatus === "loading") {
     return <LoadingState label="Restoring session..." />;
   }
@@ -556,7 +493,7 @@ export default function App() {
                   error={devicesError ?? notificationsError}
                   pushPermission={pushPermission}
                   pushEnabled={pushEnabled}
-                  onEnablePush={() => handleTogglePush(true)}
+                  onEnablePush={() => togglePush(true)}
                 />
               </ProtectedRoute>
             }
@@ -609,7 +546,7 @@ export default function App() {
                     userRole={currentUser.role}
                     pushEnabled={pushEnabled}
                     pushPermission={pushPermission}
-                    onTogglePush={handleTogglePush}
+                    onTogglePush={togglePush}
                   />
                   {pushError ? <p role="alert" style={{ color: "var(--color-danger-border)" }}>{pushError}</p> : null}
                 </section>
