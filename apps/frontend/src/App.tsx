@@ -37,6 +37,7 @@ import {
 } from "./lib/api";
 import { getErrorMessage } from "./lib/error";
 import { useAuth } from "./hooks/useAuth";
+import { useCrud } from "./hooks/useCrud";
 import type { Device, DeviceFormValues } from "./types/device";
 import type { NotificationFilters } from "./types/notification";
 import type { Notification } from "./types/notification";
@@ -100,14 +101,9 @@ export default function App() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
   const [deletingDeviceId, setDeletingDeviceId] = useState<string | null>(null);
-  const [deviceMutationError, setDeviceMutationError] = useState<string | null>(null);
-  const [isMutatingDevice, setIsMutatingDevice] = useState(false);
-
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const [userMutationError, setUserMutationError] = useState<string | null>(null);
-  const [isMutatingUser, setIsMutatingUser] = useState(false);
 
   const filteredNotifications = useMemo(
     () =>
@@ -235,6 +231,9 @@ export default function App() {
     },
   });
 
+  const deviceCrud = useCrud(async () => { if (currentUser) await loadAppData(currentUser); });
+  const userCrud = useCrud(async () => { if (currentUser) await loadAppData(currentUser); });
+
   const { pushEnabled, pushPermission, pushError, togglePush } = usePushNotifications(authStatus);
 
   useSSE(authStatus, currentUser?.role, (notification) => {
@@ -285,113 +284,6 @@ export default function App() {
       isCancelled = true;
     };
   }, [authStatus, devices, location.pathname]);
-
-  async function handleCreateDevice(values: DeviceFormValues): Promise<CreatedDevice | undefined> {
-    if (!currentUser) {
-      return undefined;
-    }
-
-    setIsMutatingDevice(true);
-    setDeviceMutationError(null);
-
-    try {
-      const created = await createDevice(values);
-      await loadAppData(currentUser);
-      return created;
-    } catch (error) {
-      setDeviceMutationError(getErrorMessage(error, "Unable to create the device."));
-    } finally {
-      setIsMutatingDevice(false);
-    }
-  }
-
-  async function handleUpdateDevice(deviceId: string, values: DeviceFormValues) {
-    if (!currentUser) {
-      return;
-    }
-
-    setIsMutatingDevice(true);
-    setDeviceMutationError(null);
-
-    try {
-      await updateDevice(deviceId, values);
-      setEditingDeviceId(null);
-      await loadAppData(currentUser);
-    } catch (error) {
-      setDeviceMutationError(getErrorMessage(error, "Unable to update the device."));
-    } finally {
-      setIsMutatingDevice(false);
-    }
-  }
-
-  async function handleDeleteDevice(deviceId: string) {
-    if (!currentUser) {
-      return;
-    }
-
-    setIsMutatingDevice(true);
-    setDeviceMutationError(null);
-
-    try {
-      await deleteDevice(deviceId);
-      setDeletingDeviceId(null);
-
-      if (location.pathname === `/devices/${deviceId}`) {
-        navigate("/admin/devices");
-      }
-
-      await loadAppData(currentUser);
-    } catch (error) {
-      setDeviceMutationError(getErrorMessage(error, "Unable to delete the device."));
-    } finally {
-      setIsMutatingDevice(false);
-    }
-  }
-
-  async function handleCreateUser(values: UserFormValues) {
-    if (!currentUser) return;
-    setIsMutatingUser(true);
-    setUserMutationError(null);
-    try {
-      await createUser(values);
-      setIsCreateUserModalOpen(false);
-      await loadAppData(currentUser);
-    } catch (error) {
-      setUserMutationError(getErrorMessage(error, "Unable to create patient."));
-    } finally {
-      setIsMutatingUser(false);
-    }
-  }
-
-  async function handleUpdateUser(userId: string, values: UserFormValues) {
-    if (!currentUser) return;
-    setIsMutatingUser(true);
-    setUserMutationError(null);
-    try {
-      await updateUser(userId, values);
-      setEditingUserId(null);
-      await loadAppData(currentUser);
-    } catch (error) {
-      setUserMutationError(getErrorMessage(error, "Unable to update patient."));
-    } finally {
-      setIsMutatingUser(false);
-    }
-  }
-
-  async function handleDeleteUser(userId: string) {
-    if (!currentUser) return;
-    setIsMutatingUser(true);
-    setUserMutationError(null);
-    try {
-      await deleteUser(userId);
-      setDeletingUserId(null);
-      await loadAppData(currentUser);
-    } catch (error) {
-      setUserMutationError(getErrorMessage(error, "Unable to delete patient."));
-    } finally {
-      setIsMutatingUser(false);
-    }
-  }
 
   if (authStatus === "loading") {
     return <LoadingState label="Restoring session..." />;
@@ -470,11 +362,11 @@ export default function App() {
                   userRole={currentUser.role}
                   notifications={notifications}
                   onEdit={currentUser.role === "admin" ? (deviceId) => {
-                    setDeviceMutationError(null);
+                    deviceCrud.clearError();
                     setEditingDeviceId(deviceId);
                   } : undefined}
                   onDelete={currentUser.role === "admin" ? (deviceId) => {
-                    setDeviceMutationError(null);
+                    deviceCrud.clearError();
                     setDeletingDeviceId(deviceId);
                   } : undefined}
                 />
@@ -511,15 +403,15 @@ export default function App() {
                   isLoading={isLoadingData}
                   error={devicesError ?? usersError}
                   onCreateDevice={() => {
-                    setDeviceMutationError(null);
+                    deviceCrud.clearError();
                     setIsCreateModalOpen(true);
                   }}
                   onEditDevice={(deviceId) => {
-                    setDeviceMutationError(null);
+                    deviceCrud.clearError();
                     setEditingDeviceId(deviceId);
                   }}
                   onDeleteDevice={(deviceId) => {
-                    setDeviceMutationError(null);
+                    deviceCrud.clearError();
                     setDeletingDeviceId(deviceId);
                   }}
                   onOpenDeviceDetail={(id) => navigate(`/devices/${id}`)}
@@ -540,15 +432,15 @@ export default function App() {
                   isLoading={isLoadingData}
                   error={usersError}
                   onCreateUser={() => {
-                    setUserMutationError(null);
+                    userCrud.clearError();
                     setIsCreateUserModalOpen(true);
                   }}
                   onEditUser={(userId) => {
-                    setUserMutationError(null);
+                    userCrud.clearError();
                     setEditingUserId(userId);
                   }}
                   onDeleteUser={(userId) => {
-                    setUserMutationError(null);
+                    userCrud.clearError();
                     setDeletingUserId(userId);
                   }}
                 />
@@ -565,11 +457,11 @@ export default function App() {
         caregivers={caregivers}
         onClose={() => {
           setIsCreateModalOpen(false);
-          setDeviceMutationError(null);
+          deviceCrud.clearError();
         }}
-        onCreate={handleCreateDevice}
-        isSubmitting={isMutatingDevice}
-        error={deviceMutationError}
+        onCreate={(values) => deviceCrud.run(() => createDevice(values), "Unable to create device.")}
+        isSubmitting={deviceCrud.isMutating}
+        error={deviceCrud.error}
       />
 
       <EditDeviceModal
@@ -579,11 +471,15 @@ export default function App() {
         caregivers={caregivers}
         onClose={() => {
           setEditingDeviceId(null);
-          setDeviceMutationError(null);
+          deviceCrud.clearError();
         }}
-        onUpdate={handleUpdateDevice}
-        isSubmitting={isMutatingDevice}
-        error={deviceMutationError}
+        onUpdate={(id, values) => {
+          deviceCrud.run(() => updateDevice(id, values), "Unable to update device.").then((r) => {
+            if (r) setEditingDeviceId(null);
+          });
+        }}
+        isSubmitting={deviceCrud.isMutating}
+        error={deviceCrud.error}
       />
 
       <DeleteDeviceConfirmDialog
@@ -591,22 +487,26 @@ export default function App() {
         isOpen={Boolean(deletingDeviceId)}
         onClose={() => {
           setDeletingDeviceId(null);
-          setDeviceMutationError(null);
+          deviceCrud.clearError();
         }}
-        onConfirm={handleDeleteDevice}
-        isDeleting={isMutatingDevice}
-        error={deviceMutationError}
+        onConfirm={(id) => deviceCrud.run(async () => { await deleteDevice(id); if (location.pathname === `/devices/${id}`) navigate("/admin/devices"); }, "Unable to delete device.").then((r) => {
+          if (r !== undefined) setDeletingDeviceId(null);
+        })}
+        isDeleting={deviceCrud.isMutating}
+        error={deviceCrud.error}
       />
 
       <CreateUserModal
         isOpen={isCreateUserModalOpen}
         onClose={() => {
           setIsCreateUserModalOpen(false);
-          setUserMutationError(null);
+          userCrud.clearError();
         }}
-        onCreate={handleCreateUser}
-        isSubmitting={isMutatingUser}
-        error={userMutationError}
+        onCreate={(values) => userCrud.run(() => createUser(values), "Unable to create patient.").then((r) => {
+          if (r !== undefined) setIsCreateUserModalOpen(false);
+        })}
+        isSubmitting={userCrud.isMutating}
+        error={userCrud.error}
       />
 
       <EditUserModal
@@ -614,11 +514,15 @@ export default function App() {
         isOpen={Boolean(editingUserId)}
         onClose={() => {
           setEditingUserId(null);
-          setUserMutationError(null);
+          userCrud.clearError();
         }}
-        onUpdate={handleUpdateUser}
-        isSubmitting={isMutatingUser}
-        error={userMutationError}
+        onUpdate={(id, values) => {
+          userCrud.run(() => updateUser(id, values), "Unable to update patient.").then((r) => {
+            if (r !== undefined) setEditingUserId(null);
+          });
+        }}
+        isSubmitting={userCrud.isMutating}
+        error={userCrud.error}
       />
 
       <DeleteUserConfirmDialog
@@ -626,11 +530,13 @@ export default function App() {
         isOpen={Boolean(deletingUserId)}
         onClose={() => {
           setDeletingUserId(null);
-          setUserMutationError(null);
+          userCrud.clearError();
         }}
-        onConfirm={handleDeleteUser}
-        isDeleting={isMutatingUser}
-        error={userMutationError}
+        onConfirm={(id) => userCrud.run(() => deleteUser(id), "Unable to delete patient.").then((r) => {
+          if (r !== undefined) setDeletingUserId(null);
+        })}
+        isDeleting={userCrud.isMutating}
+        error={userCrud.error}
       />
 
       <NotificationDetailModal
