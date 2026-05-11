@@ -38,25 +38,31 @@ export function UserForm({
       }}
     >
       <h3>{mode === "create" ? "Create patient" : "Edit patient"}</h3>
-      <input
-        placeholder="First name"
-        value={values.firstName}
-        onChange={(e) => setValues((p) => ({ ...p, firstName: e.target.value }))}
-        disabled={isSubmitting}
-      />
-      <input
-        placeholder="Last name"
-        value={values.lastName}
-        onChange={(e) => setValues((p) => ({ ...p, lastName: e.target.value }))}
-        disabled={isSubmitting}
-      />
-      <textarea
-        placeholder="Notes (optional)"
-        value={values.notes ?? ""}
-        onChange={(e) => setValues((p) => ({ ...p, notes: e.target.value || undefined }))}
-        disabled={isSubmitting}
-        rows={3}
-      />
+      <label>
+        First name
+        <input
+          value={values.firstName}
+          onChange={(e) => setValues((p) => ({ ...p, firstName: e.target.value }))}
+          disabled={isSubmitting}
+        />
+      </label>
+      <label>
+        Last name
+        <input
+          value={values.lastName}
+          onChange={(e) => setValues((p) => ({ ...p, lastName: e.target.value }))}
+          disabled={isSubmitting}
+        />
+      </label>
+      <label>
+        Notes (optional)
+        <textarea
+          value={values.notes ?? ""}
+          onChange={(e) => setValues((p) => ({ ...p, notes: e.target.value || undefined }))}
+          disabled={isSubmitting}
+          rows={3}
+        />
+      </label>
       {error ? <p role="alert">{error}</p> : null}
       <div className="row">
         <button type="submit" disabled={!canSubmit}>Save</button>

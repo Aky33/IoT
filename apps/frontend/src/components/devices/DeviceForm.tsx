@@ -48,39 +48,47 @@ export function DeviceForm({
       }}
     >
       <h3>{mode === "create" ? "Create device" : "Edit device"}</h3>
-      <input
-        placeholder="Name"
-        value={values.name}
-        onChange={(event) => setValues((previous) => ({ ...previous, name: event.target.value }))}
-        disabled={disabled || isSubmitting}
-      />
-      {users.length > 0 ? (
-        <select
-          value={values.assignedUserId ?? ""}
-          onChange={(event) => setValues((previous) => ({ ...previous, assignedUserId: event.target.value || undefined }))}
+      <label>
+        Name
+        <input
+          value={values.name}
+          onChange={(event) => setValues((previous) => ({ ...previous, name: event.target.value }))}
           disabled={disabled || isSubmitting}
-        >
-          <option value="">Assign patient (optional)</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.name}
-            </option>
-          ))}
-        </select>
+        />
+      </label>
+      {users.length > 0 ? (
+        <label>
+          Patient (optional)
+          <select
+            value={values.assignedUserId ?? ""}
+            onChange={(event) => setValues((previous) => ({ ...previous, assignedUserId: event.target.value || undefined }))}
+            disabled={disabled || isSubmitting}
+          >
+            <option value="">— Select —</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
       {caregivers.length > 0 ? (
-        <select
-          value={values.caregiverId ?? ""}
-          onChange={(event) => setValues((previous) => ({ ...previous, caregiverId: event.target.value || undefined }))}
-          disabled={disabled || isSubmitting}
-        >
-          <option value="">Assign caregiver (optional)</option>
-          {caregivers.map((caregiver) => (
-            <option key={caregiver.id} value={caregiver.id}>
-              {caregiver.name}
-            </option>
-          ))}
-        </select>
+        <label>
+          Caregiver (optional)
+          <select
+            value={values.caregiverId ?? ""}
+            onChange={(event) => setValues((previous) => ({ ...previous, caregiverId: event.target.value || undefined }))}
+            disabled={disabled || isSubmitting}
+          >
+            <option value="">— Select —</option>
+            {caregivers.map((caregiver) => (
+              <option key={caregiver.id} value={caregiver.id}>
+                {caregiver.name}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
       <div className="row">

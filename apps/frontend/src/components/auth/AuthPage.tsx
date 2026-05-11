@@ -59,20 +59,24 @@ export function AuthPage({
               onLogin(loginForm);
             }}
           >
-            <input
-              type="email"
-              placeholder="Email"
-              value={loginForm.email}
-              onChange={(event) => setLoginForm((previous) => ({ ...previous, email: event.target.value }))}
-              disabled={isSubmitting}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={loginForm.password}
-              onChange={(event) => setLoginForm((previous) => ({ ...previous, password: event.target.value }))}
-              disabled={isSubmitting}
-            />
+            <label>
+              Email
+              <input
+                type="email"
+                value={loginForm.email}
+                onChange={(event) => setLoginForm((previous) => ({ ...previous, email: event.target.value }))}
+                disabled={isSubmitting}
+              />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                value={loginForm.password}
+                onChange={(event) => setLoginForm((previous) => ({ ...previous, password: event.target.value }))}
+                disabled={isSubmitting}
+              />
+            </label>
             <button type="submit" disabled={isSubmitting || !loginForm.email.trim() || !loginForm.password.trim()}>
               {isSubmitting ? "Signing in..." : "Sign in"}
             </button>
@@ -86,45 +90,57 @@ export function AuthPage({
             }}
           >
             <div className="row">
-              <input
-                placeholder="First name"
-                value={registerForm.firstName}
-                onChange={(event) => setRegisterForm((previous) => ({ ...previous, firstName: event.target.value }))}
-                disabled={isSubmitting}
-              />
-              <input
-                placeholder="Last name"
-                value={registerForm.lastName}
-                onChange={(event) => setRegisterForm((previous) => ({ ...previous, lastName: event.target.value }))}
-                disabled={isSubmitting}
-              />
+              <label>
+                First name
+                <input
+                  value={registerForm.firstName}
+                  onChange={(event) => setRegisterForm((previous) => ({ ...previous, firstName: event.target.value }))}
+                  disabled={isSubmitting}
+                />
+              </label>
+              <label>
+                Last name
+                <input
+                  value={registerForm.lastName}
+                  onChange={(event) => setRegisterForm((previous) => ({ ...previous, lastName: event.target.value }))}
+                  disabled={isSubmitting}
+                />
+              </label>
             </div>
-            <input
-              type="email"
-              placeholder="Email"
-              value={registerForm.email}
-              onChange={(event) => setRegisterForm((previous) => ({ ...previous, email: event.target.value }))}
-              disabled={isSubmitting}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={registerForm.password}
-              onChange={(event) => setRegisterForm((previous) => ({ ...previous, password: event.target.value }))}
-              disabled={isSubmitting}
-            />
-            <input
-              placeholder="Phone"
-              value={registerForm.phone}
-              onChange={(event) => setRegisterForm((previous) => ({ ...previous, phone: event.target.value }))}
-              disabled={isSubmitting}
-            />
-            <input
-              placeholder="Invitation code"
-              value={registerForm.invitationCode}
-              onChange={(event) => setRegisterForm((previous) => ({ ...previous, invitationCode: event.target.value.toUpperCase() }))}
-              disabled={isSubmitting}
-            />
+            <label>
+              Email
+              <input
+                type="email"
+                value={registerForm.email}
+                onChange={(event) => setRegisterForm((previous) => ({ ...previous, email: event.target.value }))}
+                disabled={isSubmitting}
+              />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                value={registerForm.password}
+                onChange={(event) => setRegisterForm((previous) => ({ ...previous, password: event.target.value }))}
+                disabled={isSubmitting}
+              />
+            </label>
+            <label>
+              Phone
+              <input
+                value={registerForm.phone}
+                onChange={(event) => setRegisterForm((previous) => ({ ...previous, phone: event.target.value }))}
+                disabled={isSubmitting}
+              />
+            </label>
+            <label>
+              Invitation code
+              <input
+                value={registerForm.invitationCode}
+                onChange={(event) => setRegisterForm((previous) => ({ ...previous, invitationCode: event.target.value.toUpperCase() }))}
+                disabled={isSubmitting}
+              />
+            </label>
             <button
               type="submit"
               disabled={
