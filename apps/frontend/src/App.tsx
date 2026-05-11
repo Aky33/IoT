@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePushNotifications } from "./hooks/usePushNotifications";
+import { useSSE } from "./hooks/useSSE";
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AuthPage } from "./components/auth/AuthPage";
@@ -23,13 +24,11 @@ import {
   type CreatedDevice,
   createDevice,
   deleteDevice,
-  getAccessToken,
   getDevice,
   listCaregivers,
   listDevices,
   listNotifications,
   listUsers,
-  onTokenChange,
   type SessionUser,
   createUser,
   updateUser,
@@ -82,8 +81,6 @@ function DeviceDetailRoute({
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const sseRef = useRef<EventSource | null>(null);
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -227,10 +224,6 @@ export default function App() {
       navigate("/", { replace: true });
     },
     onLogout: () => {
-      if (sseRef.current) {
-        sseRef.current.close();
-        sseRef.current = null;
-      }
       setDevices([]);
       setNotifications([]);
       setUsers([]);
@@ -244,61 +237,12 @@ export default function App() {
 
   const { pushEnabled, pushPermission, pushError, togglePush } = usePushNotifications(authStatus);
 
-  const [tokenVersion, setTokenVersion] = useState(0);
-
-  useEffect(() => {
-    return onTokenChange(() => setTokenVersion((v) => v + 1));
-  }, []);
-
-  // SSE stream — open for caregivers only, reconnect on token refresh
-  useEffect(() => {
-    if (authStatus !== "authenticated" || currentUser?.role !== "caregiver") {
-      if (sseRef.current) {
-        sseRef.current.close();
-        sseRef.current = null;
-      }
-      return;
-    }
-
-    const token = getAccessToken();
-    if (!token) return;
-
-    const url = `/notifications/stream?token=${encodeURIComponent(token)}`;
-    const source = new EventSource(url);
-    sseRef.current = source;
-
-    source.onmessage = (event) => {
-      try {
-        const incoming = JSON.parse(event.data as string) as {
-          id: string;
-          type: "standard" | "urgent";
-          deviceName?: string;
-          createdAt: string;
-        };
-        setNotifications((previous) => {
-          if (previous.some((n) => n.id === incoming.id)) return previous;
-          return [
-            {
-              id: incoming.id,
-              type: incoming.type,
-              status: "pending" as const,
-              deviceId: "",
-              deviceName: incoming.deviceName ?? "Unknown device",
-              createdAt: incoming.createdAt,
-            },
-            ...previous,
-          ];
-        });
-      } catch {
-        // Ignore malformed SSE events
-      }
-    };
-
-    return () => {
-      source.close();
-      sseRef.current = null;
-    };
-  }, [authStatus, currentUser?.role, tokenVersion]);
+  useSSE(authStatus, currentUser?.role, (notification) => {
+    setNotifications((prev) => {
+      if (prev.some((n) => n.id === notification.id)) return prev;
+      return [notification, ...prev];
+    });
+  });
 
   useEffect(() => {
     const match = location.pathname.match(/^\/devices\/([^/]+)$/);
