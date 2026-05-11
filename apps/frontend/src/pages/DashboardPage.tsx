@@ -3,6 +3,7 @@ import { DeviceList } from "../components/devices/DeviceList";
 import { ErrorState } from "../components/common/ErrorState";
 import { LoadingState } from "../components/common/LoadingState";
 import { NotificationList } from "../components/notifications/NotificationList";
+import { PushPermissionBanner } from "../components/notifications/PushPermissionBanner";
 import { UrgentNotificationAlert } from "../components/notifications/UrgentNotificationAlert";
 import type { UserRole } from "../types/common";
 import type { PushPermissionState } from "../lib/api";
@@ -46,23 +47,7 @@ export function DashboardPage({
   return (
     <section className="page">
       <h2>Dashboard</h2>
-      {pushPermission === "default" && !pushEnabled ? (
-        <div className="panel banner banner-info">
-          <strong>Zapněte si notifikace</strong>
-          <p>Bez povolených notifikací nebudete upozorněni na urgentní alerty, když nemáte aplikaci otevřenou.</p>
-          {onEnablePush ? (
-            <button type="button" onClick={onEnablePush}>Povolit notifikace</button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {pushPermission === "denied" ? (
-        <div role="alert" className="panel banner banner-danger">
-          <strong>Notifikace jsou zablokované</strong>
-          <p>Prohlížeč blokuje notifikace — můžete přijít o urgentní alerty.</p>
-          <p><small>Klikněte na ikonu zámku 🔒 vlevo v adresním řádku → Oprávnění webu → Notifikace → Povolit.</small></p>
-        </div>
-      ) : null}
+      <PushPermissionBanner permission={pushPermission} pushEnabled={pushEnabled} onEnablePush={onEnablePush} />
 
       <StatusSummaryCards {...summary} userRole={userRole} />
       {urgentNotifications[0] ? (

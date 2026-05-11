@@ -1,4 +1,5 @@
 import { PushNotificationSettings } from "../components/notifications/PushNotificationSettings";
+import { PushPermissionBanner } from "../components/notifications/PushPermissionBanner";
 import { LedStatusLegend } from "../components/devices/LedStatusLegend";
 import type { UserRole } from "../types/common";
 import type { PushPermissionState } from "../lib/api";
@@ -16,28 +17,7 @@ export function SettingsPage({ userRole, pushEnabled = false, pushPermission = "
       <h2>Settings</h2>
       <p>Current role: {userRole}</p>
 
-      {pushPermission === "default" && !pushEnabled ? (
-        <div className="panel banner banner-info">
-          <strong>Zapněte si notifikace</strong>
-          <p>Bez povolených notifikací nebudete upozorněni na urgentní alerty, když nemáte aplikaci otevřenou.</p>
-          <p><small>Klikněte na checkbox níže — prohlížeč se vás zeptá na povolení.</small></p>
-        </div>
-      ) : null}
-
-      {pushPermission === "denied" ? (
-        <div role="alert" className="panel banner banner-danger">
-          <strong>Notifikace jsou zablokované</strong>
-          <p>Prohlížeč blokuje notifikace pro tuto stránku. Můžete přijít o urgentní alerty.</p>
-          <p><small>Povolte notifikace v nastavení prohlížeče (ikona zámku v adresním řádku).</small></p>
-        </div>
-      ) : null}
-
-      {pushPermission === "unsupported" ? (
-        <div role="alert" className="panel banner banner-warning">
-          <strong>Push notifikace nejsou podporované</strong>
-          <p>Tento prohlížeč nepodporuje Web Push. Notifikace budou fungovat pouze při otevřené aplikaci.</p>
-        </div>
-      ) : null}
+      <PushPermissionBanner permission={pushPermission} pushEnabled={pushEnabled} />
 
       <PushNotificationSettings
         enabled={pushEnabled}
