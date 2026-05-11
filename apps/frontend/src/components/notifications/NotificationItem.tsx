@@ -7,7 +7,6 @@ type NotificationItemProps = {
   userRole: UserRole;
   onOpenDetail?: (notificationId: string) => void;
   onOpenDeviceDetail?: (deviceId: string) => void;
-  isProcessing?: boolean;
 };
 
 export function NotificationItem({
@@ -15,7 +14,6 @@ export function NotificationItem({
   userRole,
   onOpenDetail,
   onOpenDeviceDetail,
-    isProcessing: _isProcessing = false
 }: NotificationItemProps) {
   const isUrgentPending = notification.type === "urgent" && notification.status === "pending";
 

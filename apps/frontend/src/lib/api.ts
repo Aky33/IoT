@@ -189,7 +189,7 @@ function mapNotification(notification: BackendNotification): Notification {
     : notification.deviceId.id ?? "unknown-device";
 
   const deviceName = typeof notification.deviceId === "string"
-    ? notification.deviceId
+    ? "Unknown device"
     : notification.deviceId.name ?? "Unknown device";
 
   return {

@@ -600,8 +600,8 @@ export default function App() {
     );
   }
 
-  const notificationCount = notifications.filter((item) => item.status === "pending").length;
-  const urgentCount = notifications.filter((item) => item.type === "urgent" && item.status === "pending").length;
+  const notificationCount = summary.pendingNotificationsCount;
+  const urgentCount = summary.urgentNotificationsCount;
 
   return (
     <>

@@ -36,7 +36,6 @@ export function NotificationHistoryPage({
       <NotificationFilters
         filters={filters}
         devices={devices}
-        userRole={userRole}
         onChange={onFilterChange}
         onReset={() => onFilterChange({})}
         isDisabled={isLoading}

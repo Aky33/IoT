@@ -9,7 +9,6 @@ type NotificationDetailModalProps = {
   userRole: UserRole;
   onClose: () => void;
   onOpenDeviceDetail?: (deviceId: string) => void;
-  isProcessing?: boolean;
 };
 
 export function NotificationDetailModal({
@@ -18,7 +17,6 @@ export function NotificationDetailModal({
   userRole,
   onClose,
   onOpenDeviceDetail,
-  isProcessing: _isProcessing = false
 }: NotificationDetailModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="stack">

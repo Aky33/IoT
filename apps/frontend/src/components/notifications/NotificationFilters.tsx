@@ -1,11 +1,9 @@
 import type { Device } from "../../types/device";
 import type { NotificationFilters as NotificationFiltersType } from "../../types/notification";
-import type { UserRole } from "../../types/common";
 
 type NotificationFiltersProps = {
   filters: NotificationFiltersType;
   devices: Device[];
-  userRole: UserRole;
   onChange: (filters: NotificationFiltersType) => void;
   onReset?: () => void;
   isDisabled?: boolean;
