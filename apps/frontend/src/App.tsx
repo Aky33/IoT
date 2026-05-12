@@ -220,6 +220,7 @@ export default function App() {
                   pushPermission={pushPermission}
                   pushEnabled={pushEnabled}
                   onEnablePush={() => togglePush(true)}
+                  onOpenDeviceDetail={(id) => navigate(`/devices/${id}`)}
                 />
               </ProtectedRoute>
             }

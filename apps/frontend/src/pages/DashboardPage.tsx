@@ -22,6 +22,7 @@ type DashboardPageProps = {
   pushPermission?: PushPermissionState;
   pushEnabled?: boolean;
   onEnablePush?: () => void;
+  onOpenDeviceDetail?: (deviceId: string) => void;
 };
 
 export function DashboardPage({
@@ -35,6 +36,7 @@ export function DashboardPage({
   pushPermission = "default",
   pushEnabled = false,
   onEnablePush,
+  onOpenDeviceDetail,
 }: DashboardPageProps) {
   if (isLoading) {
     return <LoadingState label="Loading dashboard..." />;
@@ -59,7 +61,7 @@ export function DashboardPage({
       {latestNotifications.length > 0 ? (
         <NotificationList notifications={latestNotifications} userRole={userRole} />
       ) : null}
-      <DeviceList devices={devices} userRole={userRole} />
+      <DeviceList devices={devices} userRole={userRole} onOpenDetail={onOpenDeviceDetail} />
       {userRole === "admin" ? <section className="panel">Admin quick actions</section> : null}
     </section>
   );
