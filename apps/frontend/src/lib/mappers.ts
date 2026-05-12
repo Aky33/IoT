@@ -7,9 +7,6 @@ export type BackendDevice = {
   name: string;
   userId?: string;
   caregiverId?: string;
-  macAddress?: string;
-  firmwareVersion?: string;
-  lastSeenAt?: string;
   createdAt: string;
   deviceSecret?: string;
 };
@@ -34,29 +31,13 @@ export type BackendUser = {
   notes?: string;
 };
 
-export const ONLINE_THRESHOLD_MS = 10 * 60 * 1000;
-
-export function deriveDeviceStatus(lastSeenAt?: string): Device["status"] {
-  if (!lastSeenAt) {
-    return "offline";
-  }
-
-  return Date.now() - new Date(lastSeenAt).getTime() <= ONLINE_THRESHOLD_MS ? "online" : "offline";
-}
-
 export function mapDevice(device: BackendDevice): Device {
-  const status = deriveDeviceStatus(device.lastSeenAt);
-
   return {
     id: device.id,
     name: device.name,
     assignedUserId: device.userId,
     caregiverId: device.caregiverId,
-    macAddress: device.macAddress,
-    firmwareVersion: device.firmwareVersion,
-    lastSeenAt: device.lastSeenAt,
     createdAt: device.createdAt,
-    status,
   };
 }
 

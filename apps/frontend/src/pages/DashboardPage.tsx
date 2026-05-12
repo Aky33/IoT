@@ -51,7 +51,7 @@ export function DashboardPage({
       <h2>Dashboard</h2>
       <PushPermissionBanner permission={pushPermission} pushEnabled={pushEnabled} onEnablePush={onEnablePush} />
 
-      <StatusSummaryCards {...summary} userRole={userRole} />
+      <StatusSummaryCards {...summary} />
       {urgentNotifications[0] ? (
         <UrgentNotificationAlert
           notification={urgentNotifications[0]}

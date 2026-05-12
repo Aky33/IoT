@@ -171,11 +171,9 @@ export default function App() {
   );
 
   const summary = useMemo(() => ({
-    activeDevicesCount: devices.filter((d) => d.status === "online").length,
-    offlineDevicesCount: devices.filter((d) => d.status !== "online").length,
     pendingNotificationsCount: notifications.filter((n) => n.status === "pending").length,
     urgentNotificationsCount: notifications.filter((n) => n.type === "urgent" && n.status === "pending").length,
-  }), [devices, notifications]);
+  }), [notifications]);
 
   const latestNotifications = useMemo(() => notifications.slice(0, 5), [notifications]);
   const urgentNotifications = useMemo(
