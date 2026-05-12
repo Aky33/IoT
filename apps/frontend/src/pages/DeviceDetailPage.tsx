@@ -4,6 +4,7 @@ import type { Notification } from "../types/notification";
 import { DeviceStatusIndicator } from "../components/devices/DeviceStatusIndicator";
 import { LedStatusPreview } from "../components/devices/LedStatusPreview";
 import { NotificationList } from "../components/notifications/NotificationList";
+import { DeviceButtonSimulator } from "../components/devices/DeviceButtonSimulator";
 import { LoadingState } from "../components/common/LoadingState";
 import { ErrorState } from "../components/common/ErrorState";
 
@@ -57,6 +58,9 @@ export function DeviceDetailPage({
           </div>
         ) : null}
       </section>
+      {userRole === "admin" ? (
+        <DeviceButtonSimulator deviceId={device.id} deviceName={device.name} />
+      ) : null}
       {notificationHistory.length > 0 ? (
         <NotificationList notifications={notificationHistory} userRole={userRole} />
       ) : null}

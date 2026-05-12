@@ -41,12 +41,28 @@ type BackendCaregiver = {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
+  role?: string;
+  isActive?: boolean;
 };
 
 export type Caregiver = {
   id: string;
+  firstName: string;
+  lastName: string;
   name: string;
   email: string;
+  phone?: string;
+  role: string;
+  isActive: boolean;
+};
+
+export type CaregiverFormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  role?: string;
 };
 
 export type CreatedDevice = Device & { deviceSecret: string };
@@ -111,6 +127,13 @@ export async function deleteDevice(deviceId: string) {
   await request<void>(`/devices/delete/${deviceId}`, { method: "DELETE" });
 }
 
+export async function simulateDevicePress(deviceId: string, type: "standard" | "urgent") {
+  await request(`/devices/${deviceId}/simulate`, {
+    method: "POST",
+    body: { type },
+  });
+}
+
 // ── Notification CRUD ─────────────────────────────────────────────────────────
 
 export async function listNotifications(params: NotificationQueryParams = {}) {
@@ -166,13 +189,35 @@ export async function deleteUser(userId: string) {
 
 // ── Caregiver CRUD ────────────────────────────────────────────────────────────
 
+function mapCaregiver(c: BackendCaregiver): Caregiver {
+  return {
+    id: c.id,
+    firstName: c.firstName,
+    lastName: c.lastName,
+    name: `${c.firstName} ${c.lastName}`.trim(),
+    email: c.email,
+    phone: c.phone,
+    role: c.role ?? "caregiver",
+    isActive: c.isActive ?? true,
+  };
+}
+
 export async function listCaregivers() {
   const result = await request<PaginatedResponse<BackendCaregiver>>(
     buildUrl("/caregivers/all", { pageSize: 200 }),
   );
-  return (result?.data ?? []).map((c): Caregiver => ({
-    id: c.id,
-    name: `${c.firstName} ${c.lastName}`.trim(),
-    email: c.email,
-  }));
+  return (result?.data ?? []).map(mapCaregiver);
+}
+
+export async function updateCaregiver(id: string, values: CaregiverFormValues) {
+  const result = await request<BackendCaregiver>(`/caregivers/edit/${id}`, {
+    method: "PUT",
+    body: values,
+  });
+  if (!result) throw new ApiError("Backend did not return the updated caregiver.", 500);
+  return mapCaregiver(result);
+}
+
+export async function deleteCaregiver(id: string) {
+  await request<void>(`/caregivers/delete/${id}`, { method: "DELETE" });
 }

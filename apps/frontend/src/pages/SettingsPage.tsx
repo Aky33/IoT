@@ -1,5 +1,6 @@
 import { PushNotificationSettings } from "../components/notifications/PushNotificationSettings";
 import { PushPermissionBanner } from "../components/notifications/PushPermissionBanner";
+import { DoNotDisturbWarning } from "../components/notifications/DoNotDisturbWarning";
 import { LedStatusLegend } from "../components/devices/LedStatusLegend";
 import type { UserRole } from "../types/common";
 import type { PushPermissionState } from "../lib/api";
@@ -24,6 +25,7 @@ export function SettingsPage({ userRole, pushEnabled = false, pushPermission = "
         onToggleEnabled={onTogglePush}
         disabled={pushPermission === "denied" || pushPermission === "unsupported"}
       />
+      <DoNotDisturbWarning pushEnabled={pushEnabled} />
       <LedStatusLegend />
     </section>
   );

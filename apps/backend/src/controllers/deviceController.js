@@ -1,5 +1,6 @@
 import { deviceRepository } from '../repositories/deviceRepository.js';
 import { NotFoundError, ForbiddenError } from '../errors/AppError.js';
+import { createFromDevicePress } from '../services/notificationService.js';
 
 export const deviceController = {
   async create(req, res) {
@@ -34,5 +35,12 @@ export const deviceController = {
     const deleted = await deviceRepository.remove(req.params.id);
     if (!deleted) throw new NotFoundError('Device', req.params.id);
     res.status(204).end();
+  },
+
+  async simulate(req, res) {
+    const device = await deviceRepository.findById(req.params.id);
+    if (!device) throw new NotFoundError('Device', req.params.id);
+    const notification = await createFromDevicePress(device, req.body.type);
+    res.status(201).json(notification);
   },
 };
