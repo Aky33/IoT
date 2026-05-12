@@ -20,6 +20,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { AdminDevicesPage } from "./pages/admin/AdminDevicesPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { AdminCaregiversPage } from "./pages/admin/AdminCaregiversPage";
+import { AdminInvitationsPage } from "./pages/admin/AdminInvitationsPage";
 import { DeviceDetailPage } from "./pages/DeviceDetailPage";
 import { useAuth } from "./hooks/useAuth";
 import { useDevicesQuery, useDeviceDetailQuery, useCreateDevice, useUpdateDevice, useDeleteDevice } from "./hooks/useDevicesQuery";
@@ -358,6 +359,18 @@ export default function App() {
                     setDeletingCaregiverId(caregiverId);
                   }}
                 />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/invitations"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin"]}
+                userRole={currentUser.role}
+                fallback={<Navigate to="/" replace />}
+              >
+                <AdminInvitationsPage userRole={currentUser.role} />
               </ProtectedRoute>
             }
           />

@@ -27,6 +27,7 @@ export function Navbar({
       { key: "/admin/devices", label: "Devices" },
       { key: "/admin/users", label: "Patients" },
       { key: "/admin/caregivers", label: "Caregivers" },
+      { key: "/admin/invitations", label: "Invitations" },
     ] : [])
   ];
 

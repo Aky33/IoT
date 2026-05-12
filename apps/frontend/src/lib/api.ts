@@ -221,3 +221,31 @@ export async function updateCaregiver(id: string, values: CaregiverFormValues) {
 export async function deleteCaregiver(id: string) {
   await request<void>(`/caregivers/delete/${id}`, { method: "DELETE" });
 }
+
+// ── Invitations ───────────────────────────────────────────────────────────────
+
+export type Invitation = {
+  id: string;
+  code: string;
+  role: string;
+  expiresAt: string;
+  createdAt: string;
+};
+
+export async function listInvitations() {
+  const result = await request<Invitation[]>("/invitations/all");
+  return result ?? [];
+}
+
+export async function createInvitation(role: string = "caregiver", ttlHours: number = 24) {
+  const result = await request<Invitation>("/invitations/create", {
+    method: "POST",
+    body: { role, ttlHours },
+  });
+  if (!result) throw new ApiError("Backend did not return the created invitation.", 500);
+  return result;
+}
+
+export async function revokeInvitation(id: string) {
+  await request<void>(`/invitations/revoke/${id}`, { method: "DELETE" });
+}
