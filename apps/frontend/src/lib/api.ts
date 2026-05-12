@@ -128,7 +128,7 @@ export async function deleteDevice(deviceId: string) {
 }
 
 export async function simulateDevicePress(deviceId: string, type: "standard" | "urgent") {
-  await request(`/devices/${deviceId}/simulate`, {
+  await request(`/devices/simulate/${deviceId}`, {
     method: "POST",
     body: { type },
   });

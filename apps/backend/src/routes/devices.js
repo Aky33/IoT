@@ -13,4 +13,4 @@ devicesRouter.get('/all', deviceController.list);
 devicesRouter.get('/get/:id', deviceController.get);
 devicesRouter.put('/edit/:id', authorize('admin'), validateBody(editDeviceSchema), deviceController.update);
 devicesRouter.delete('/delete/:id', authorize('admin'), deviceController.remove);
-devicesRouter.post('/:id/simulate', authorize('admin'), validateBody(createNotificationSchema), deviceController.simulate);
+devicesRouter.post('/simulate/:id', authorize('admin'), validateBody(createNotificationSchema), deviceController.simulate);
