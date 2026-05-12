@@ -12,16 +12,20 @@ import { NotificationDetailModal } from "./components/notifications/Notification
 import { CreateUserModal } from "./components/users/CreateUserModal";
 import { EditUserModal } from "./components/users/EditUserModal";
 import { DeleteUserConfirmDialog } from "./components/users/DeleteUserConfirmDialog";
+import { EditCaregiverModal } from "./components/caregivers/EditCaregiverModal";
+import { DeleteCaregiverConfirmDialog } from "./components/caregivers/DeleteCaregiverConfirmDialog";
 import { DashboardPage } from "./pages/DashboardPage";
 import { NotificationHistoryPage } from "./pages/NotificationHistoryPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { AdminDevicesPage } from "./pages/admin/AdminDevicesPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
+import { AdminCaregiversPage } from "./pages/admin/AdminCaregiversPage";
 import { DeviceDetailPage } from "./pages/DeviceDetailPage";
 import { useAuth } from "./hooks/useAuth";
 import { useDevicesQuery, useDeviceDetailQuery, useCreateDevice, useUpdateDevice, useDeleteDevice } from "./hooks/useDevicesQuery";
 import { useNotificationsQuery } from "./hooks/useNotificationsQuery";
 import { useUsersQuery, useCaregiversQuery, useCreateUser, useUpdateUser, useDeleteUser } from "./hooks/useUsersQuery";
+import { useUpdateCaregiver, useDeleteCaregiver } from "./hooks/useCaregiversQuery";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 import { useSSE } from "./hooks/useSSE";
 import type { Device } from "./types/device";
@@ -77,6 +81,8 @@ export default function App() {
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [editingCaregiverId, setEditingCaregiverId] = useState<string | null>(null);
+  const [deletingCaregiverId, setDeletingCaregiverId] = useState<string | null>(null);
 
   const {
     authStatus,
@@ -118,6 +124,8 @@ export default function App() {
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+  const updateCaregiverMutation = useUpdateCaregiver();
+  const deleteCaregiverMutation = useDeleteCaregiver();
 
   const { pushEnabled, pushPermission, pushError, togglePush } = usePushNotifications(authStatus);
 
@@ -146,6 +154,8 @@ export default function App() {
   );
   const editingUser = useMemo(() => users.find((u) => u.id === editingUserId) ?? null, [users, editingUserId]);
   const deletingUser = useMemo(() => users.find((u) => u.id === deletingUserId) ?? null, [users, deletingUserId]);
+  const editingCaregiver = useMemo(() => caregivers.find((c) => c.id === editingCaregiverId) ?? null, [caregivers, editingCaregiverId]);
+  const deletingCaregiver = useMemo(() => caregivers.find((c) => c.id === deletingCaregiverId) ?? null, [caregivers, deletingCaregiverId]);
   const selectedNotification = useMemo(
     () => notifications.find((n) => n.id === selectedNotificationId) ?? null,
     [notifications, selectedNotificationId],
@@ -326,6 +336,31 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/caregivers"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin"]}
+                userRole={currentUser.role}
+                fallback={<Navigate to="/" replace />}
+              >
+                <AdminCaregiversPage
+                  userRole={currentUser.role}
+                  caregivers={caregivers}
+                  isLoading={isLoadingData}
+                  error={null}
+                  onEditCaregiver={(caregiverId) => {
+                    updateCaregiverMutation.reset();
+                    setEditingCaregiverId(caregiverId);
+                  }}
+                  onDeleteCaregiver={(caregiverId) => {
+                    deleteCaregiverMutation.reset();
+                    setDeletingCaregiverId(caregiverId);
+                  }}
+                />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppLayout>
@@ -439,6 +474,42 @@ export default function App() {
         }}
         isDeleting={deleteUserMutation.isPending}
         error={deleteUserMutation.error?.message ?? null}
+      />
+
+      <EditCaregiverModal
+        caregiver={editingCaregiver}
+        isOpen={Boolean(editingCaregiverId)}
+        onClose={() => {
+          setEditingCaregiverId(null);
+          updateCaregiverMutation.reset();
+        }}
+        onUpdate={(id, values) => {
+          updateCaregiverMutation.mutateAsync({ id, values }).then(() => {
+            setEditingCaregiverId(null);
+          }).catch(() => {
+            // error is captured by mutation state
+          });
+        }}
+        isSubmitting={updateCaregiverMutation.isPending}
+        error={updateCaregiverMutation.error?.message ?? null}
+      />
+
+      <DeleteCaregiverConfirmDialog
+        caregiver={deletingCaregiver}
+        isOpen={Boolean(deletingCaregiverId)}
+        onClose={() => {
+          setDeletingCaregiverId(null);
+          deleteCaregiverMutation.reset();
+        }}
+        onConfirm={(id) => {
+          deleteCaregiverMutation.mutateAsync(id).then(() => {
+            setDeletingCaregiverId(null);
+          }).catch(() => {
+            // error is captured by mutation state
+          });
+        }}
+        isDeleting={deleteCaregiverMutation.isPending}
+        error={deleteCaregiverMutation.error?.message ?? null}
       />
 
       <NotificationDetailModal

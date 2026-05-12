@@ -26,6 +26,7 @@ export function Navbar({
     ...(userRole === "admin" ? [
       { key: "/admin/devices", label: "Devices" },
       { key: "/admin/users", label: "Patients" },
+      { key: "/admin/caregivers", label: "Caregivers" },
     ] : [])
   ];
 
