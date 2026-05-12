@@ -1,8 +1,8 @@
 import type { UserRole } from "../types/common";
 import type { Device } from "../types/device";
 import type { Notification } from "../types/notification";
-import { DeviceStatusIndicator } from "../components/devices/DeviceStatusIndicator";
-import { LedStatusPreview } from "../components/devices/LedStatusPreview";
+import type { User } from "../types/user";
+import type { Caregiver } from "../lib/api";
 import { NotificationList } from "../components/notifications/NotificationList";
 import { DeviceButtonSimulator } from "../components/devices/DeviceButtonSimulator";
 import { LoadingState } from "../components/common/LoadingState";
@@ -13,6 +13,8 @@ type DeviceDetailPageProps = {
   device: Device | null;
   userRole: UserRole;
   notificationHistory?: Notification[];
+  users?: User[];
+  caregivers?: Caregiver[];
   isLoading?: boolean;
   error?: string | null;
   onEdit?: (deviceId: string) => void;
@@ -24,37 +26,45 @@ export function DeviceDetailPage({
   device,
   userRole,
   notificationHistory = [],
+  users = [],
+  caregivers = [],
   isLoading = false,
   error = null,
   onEdit,
-    onDelete
+  onDelete,
 }: DeviceDetailPageProps) {
-  if (!deviceId) {
-    return null;
-  }
+  if (!deviceId) return null;
+  if (isLoading) return <LoadingState label="Loading device detail..." />;
+  if (error) return <ErrorState message={error} />;
+  if (!device) return <ErrorState message="Device not found." />;
 
-  if (isLoading) {
-    return <LoadingState label="Loading device detail..." />;
-  }
-
-  if (error) {
-    return <ErrorState message={error} />;
-  }
-
-  if (!device) {
-    return <ErrorState message="Device not found." />;
-  }
+  const assignedUser = users.find((u) => u.id === device.assignedUserId);
+  const assignedCaregiver = caregivers.find((c) => c.id === device.caregiverId);
 
   return (
     <section className="page">
       <h2>{device.name}</h2>
       <section className="panel stack">
-        <DeviceStatusIndicator status={device.status} lastSeenAt={device.lastSeenAt} />
-        <LedStatusPreview status={device.ledStatus} description="Current LED state" />
+        <dl className="stack" style={{ gap: "0.3rem" }}>
+          {assignedUser ? (
+            <>
+              <dt><strong>Patient</strong></dt>
+              <dd>{assignedUser.name}</dd>
+            </>
+          ) : null}
+          {assignedCaregiver ? (
+            <>
+              <dt><strong>Caregiver</strong></dt>
+              <dd>{assignedCaregiver.name} ({assignedCaregiver.email})</dd>
+            </>
+          ) : null}
+          <dt><strong>Created</strong></dt>
+          <dd>{new Date(device.createdAt).toLocaleDateString()}</dd>
+        </dl>
         {userRole === "admin" ? (
           <div className="row">
-            {onEdit ? <button onClick={() => onEdit(device.id)}>Edit</button> : null}
-            {onDelete ? <button onClick={() => onDelete(device.id)}>Delete</button> : null}
+            {onEdit ? <button type="button" onClick={() => onEdit(device.id)}>Edit</button> : null}
+            {onDelete ? <button type="button" onClick={() => onDelete(device.id)}>Delete</button> : null}
           </div>
         ) : null}
       </section>

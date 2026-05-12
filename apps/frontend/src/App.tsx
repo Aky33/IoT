@@ -29,10 +29,12 @@ import { useUsersQuery, useCaregiversQuery, useCreateUser, useUpdateUser, useDel
 import { useUpdateCaregiver, useDeleteCaregiver } from "./hooks/useCaregiversQuery";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 import { useSSE } from "./hooks/useSSE";
+import type { Caregiver } from "./lib/api";
 import type { Device } from "./types/device";
 import type { NotificationFilters } from "./types/notification";
 import type { Notification } from "./types/notification";
 import type { UserRole } from "./types/common";
+import type { User } from "./types/user";
 
 type DeviceDetailRouteProps = {
   device: Device | null;
@@ -40,6 +42,8 @@ type DeviceDetailRouteProps = {
   error?: string | null;
   userRole: UserRole;
   notifications: Notification[];
+  users: User[];
+  caregivers: Caregiver[];
   onEdit?: (deviceId: string) => void;
   onDelete?: (deviceId: string) => void;
 };
@@ -50,6 +54,8 @@ function DeviceDetailRoute({
   error = null,
   userRole,
   notifications,
+  users,
+  caregivers,
   onEdit,
   onDelete,
 }: DeviceDetailRouteProps) {
@@ -61,6 +67,8 @@ function DeviceDetailRoute({
       device={device}
       userRole={userRole}
       notificationHistory={notifications.filter((notification) => notification.deviceId === id)}
+      users={users}
+      caregivers={caregivers}
       isLoading={isLoading}
       error={error}
       onEdit={onEdit}
@@ -252,6 +260,8 @@ export default function App() {
                   error={deviceDetailError?.message ?? null}
                   userRole={currentUser.role}
                   notifications={notifications}
+                  users={users}
+                  caregivers={caregivers}
                   onEdit={currentUser.role === "admin" ? (deviceId) => {
                     updateDeviceMutation.reset();
                     setEditingDeviceId(deviceId);
