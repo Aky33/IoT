@@ -14,6 +14,7 @@ import type { Device } from "../types/device";
 // ── Re-exports for backward compatibility ────────────────────────────────────
 export { ApiError } from "./api-client";
 export type { PaginatedResponse } from "./api-client";
+export { buildUrl } from "./api-client";
 export {
   type SessionUser,
   type RegisterPayload,

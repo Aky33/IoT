@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getAccessToken, onTokenChange } from "../lib/api";
+import { buildUrl, getAccessToken, onTokenChange } from "../lib/api";
 import type { Notification } from "../types/notification";
 
 export function useSSE(
@@ -27,7 +27,7 @@ export function useSSE(
     const token = getAccessToken();
     if (!token) return;
 
-    const url = `/notifications/stream?token=${encodeURIComponent(token)}`;
+    const url = buildUrl("/notifications/stream", { token });
     const source = new EventSource(url);
     sseRef.current = source;
 
