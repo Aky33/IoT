@@ -24,8 +24,9 @@ coverage
 .idea
 .vscode/*.log
 
-# Frontend build artifacts
+# Build artifacts
 apps/frontend/dist/
+*.tsbuildinfo
 
 # ignore additional files using core.excludesFile
 # https://git-scm.com/docs/gitignore
