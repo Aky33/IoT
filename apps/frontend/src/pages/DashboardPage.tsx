@@ -48,7 +48,12 @@ export function DashboardPage({
 
   return (
     <section className="page">
-      <h2>Dashboard</h2>
+      <header className="page-header">
+        <div className="page-header__title">
+          <h2>Dashboard</h2>
+          <p>Live overview of devices and incoming notifications.</p>
+        </div>
+      </header>
       <PushPermissionBanner permission={pushPermission} pushEnabled={pushEnabled} onEnablePush={onEnablePush} />
 
       <StatusSummaryCards {...summary} />
@@ -62,7 +67,6 @@ export function DashboardPage({
         <NotificationList notifications={latestNotifications} userRole={userRole} />
       ) : null}
       <DeviceList devices={devices} userRole={userRole} onOpenDetail={onOpenDeviceDetail} />
-      {userRole === "admin" ? <section className="panel">Admin quick actions</section> : null}
     </section>
   );
 }

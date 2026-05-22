@@ -31,31 +31,35 @@ export function UserForm({
 
   return (
     <form
-      className="panel stack"
+      className="stack"
       onSubmit={(event) => {
         event.preventDefault();
         if (canSubmit) onSubmit(values);
       }}
     >
-      <h3>{mode === "create" ? "Create patient" : "Edit patient"}</h3>
-      <label>
-        First name
-        <input
-          value={values.firstName}
-          onChange={(e) => setValues((p) => ({ ...p, firstName: e.target.value }))}
-          disabled={isSubmitting}
-        />
-      </label>
-      <label>
-        Last name
-        <input
-          value={values.lastName}
-          onChange={(e) => setValues((p) => ({ ...p, lastName: e.target.value }))}
-          disabled={isSubmitting}
-        />
-      </label>
-      <label>
-        Notes (optional)
+      <div className="modal-header">
+        <h3>{mode === "create" ? "Create patient" : "Edit patient"}</h3>
+      </div>
+      <div className="field-row">
+        <label className="field">
+          <span>First name</span>
+          <input
+            value={values.firstName}
+            onChange={(e) => setValues((p) => ({ ...p, firstName: e.target.value }))}
+            disabled={isSubmitting}
+          />
+        </label>
+        <label className="field">
+          <span>Last name</span>
+          <input
+            value={values.lastName}
+            onChange={(e) => setValues((p) => ({ ...p, lastName: e.target.value }))}
+            disabled={isSubmitting}
+          />
+        </label>
+      </div>
+      <label className="field">
+        <span>Notes <span className="text-subtle">(optional)</span></span>
         <textarea
           value={values.notes ?? ""}
           onChange={(e) => setValues((p) => ({ ...p, notes: e.target.value || undefined }))}
@@ -63,10 +67,14 @@ export function UserForm({
           rows={3}
         />
       </label>
-      {error ? <p role="alert">{error}</p> : null}
-      <div className="row">
-        <button type="submit" disabled={!canSubmit}>Save</button>
-        <button type="button" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+      {error ? <p role="alert" className="text-danger text-sm">{error}</p> : null}
+      <div className="modal-actions">
+        <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={isSubmitting}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
+          {isSubmitting ? "Saving…" : "Save"}
+        </button>
       </div>
     </form>
   );

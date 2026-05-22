@@ -34,7 +34,7 @@ export function DeviceDetailPage({
   onDelete,
 }: DeviceDetailPageProps) {
   if (!deviceId) return null;
-  if (isLoading) return <LoadingState label="Loading device detail..." />;
+  if (isLoading) return <LoadingState label="Loading device detail…" />;
   if (error) return <ErrorState message={error} />;
   if (!device) return <ErrorState message="Device not found." />;
 
@@ -43,30 +43,45 @@ export function DeviceDetailPage({
 
   return (
     <section className="page">
-      <h2>{device.name}</h2>
-      <section className="panel stack">
-        <dl className="stack" style={{ gap: "0.3rem" }}>
+      <header className="page-header">
+        <div className="page-header__title">
+          <h2>{device.name}</h2>
+          <p>Device details and recent activity.</p>
+        </div>
+        {userRole === "admin" ? (
+          <div className="row">
+            {onEdit ? (
+              <button type="button" className="btn btn-secondary" onClick={() => onEdit(device.id)}>
+                Edit
+              </button>
+            ) : null}
+            {onDelete ? (
+              <button type="button" className="btn btn-ghost text-danger" onClick={() => onDelete(device.id)}>
+                Delete
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </header>
+      <section className="panel">
+        <dl className="kv">
           {assignedUser ? (
             <>
-              <dt><strong>Patient</strong></dt>
+              <dt>Patient</dt>
               <dd>{assignedUser.name}</dd>
             </>
           ) : null}
           {assignedCaregiver ? (
             <>
-              <dt><strong>Caregiver</strong></dt>
-              <dd>{assignedCaregiver.name} ({assignedCaregiver.email})</dd>
+              <dt>Caregiver</dt>
+              <dd>
+                {assignedCaregiver.name} · <span className="text-muted">{assignedCaregiver.email}</span>
+              </dd>
             </>
           ) : null}
-          <dt><strong>Created</strong></dt>
+          <dt>Created</dt>
           <dd>{new Date(device.createdAt).toLocaleDateString()}</dd>
         </dl>
-        {userRole === "admin" ? (
-          <div className="row">
-            {onEdit ? <button type="button" onClick={() => onEdit(device.id)}>Edit</button> : null}
-            {onDelete ? <button type="button" onClick={() => onDelete(device.id)}>Delete</button> : null}
-          </div>
-        ) : null}
       </section>
       {userRole === "admin" ? (
         <DeviceButtonSimulator deviceId={device.id} deviceName={device.name} />

@@ -11,11 +11,22 @@ type SettingsPageProps = {
   onTogglePush?: (value: boolean) => void;
 };
 
-export function SettingsPage({ userRole, pushEnabled = false, pushPermission = "default", onTogglePush }: SettingsPageProps) {
+export function SettingsPage({
+  userRole,
+  pushEnabled = false,
+  pushPermission = "default",
+  onTogglePush,
+}: SettingsPageProps) {
   return (
     <section className="page">
-      <h2>Settings</h2>
-      <p>Current role: {userRole}</p>
+      <header className="page-header">
+        <div className="page-header__title">
+          <h2>Settings</h2>
+          <p>
+            Signed in as <span className="badge badge-muted">{userRole}</span>
+          </p>
+        </div>
+      </header>
 
       <PushPermissionBanner permission={pushPermission} pushEnabled={pushEnabled} />
 

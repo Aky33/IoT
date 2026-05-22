@@ -26,17 +26,29 @@ export function DeviceButtonSimulator({ deviceId, deviceName, disabled = false }
 
   return (
     <section className="panel stack">
-      <h4>Button simulator</h4>
-      <p><small>Simulate a physical button press on this device.</small></p>
+      <div className="stack-tight">
+        <h4>Button simulator</h4>
+        <small className="text-muted">Simulate a physical button press on this device.</small>
+      </div>
       <div className="row">
-        <button type="button" disabled={disabled || isProcessing} onClick={() => handlePress("standard")}>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          disabled={disabled || isProcessing}
+          onClick={() => handlePress("standard")}
+        >
           Standard press
         </button>
-        <button type="button" disabled={disabled || isProcessing} onClick={() => handlePress("urgent")}>
+        <button
+          type="button"
+          className="btn btn-danger"
+          disabled={disabled || isProcessing}
+          onClick={() => handlePress("urgent")}
+        >
           Urgent press (long)
         </button>
       </div>
-      {result ? <p role="status"><small>{result}</small></p> : null}
+      {result ? <small role="status" className="text-muted">{result}</small> : null}
     </section>
   );
 }

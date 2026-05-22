@@ -29,29 +29,52 @@ export function AdminUsersPage({
 
   return (
     <section className="page">
-      <h2>Patients</h2>
-      {onCreateUser ? <button onClick={onCreateUser}>Create patient</button> : null}
-      {isLoading ? <LoadingState label="Loading patients..." /> : null}
+      <header className="page-header">
+        <div className="page-header__title">
+          <h2>Patients</h2>
+          <p>People who use the care buttons.</p>
+        </div>
+        {onCreateUser ? (
+          <button type="button" className="btn btn-primary" onClick={onCreateUser}>
+            + Create patient
+          </button>
+        ) : null}
+      </header>
+      {isLoading ? <LoadingState label="Loading patients…" /> : null}
       {error ? <ErrorState message={error} /> : null}
       {!isLoading && !error && users.length === 0 ? (
-        <EmptyState title="No patients" description="Create your first patient." />
+        <EmptyState title="No patients yet" description="Create your first patient." />
       ) : null}
       {!isLoading && !error && users.length > 0 ? (
-        <div className="stack">
+        <div className="list-stack">
           {users.map((user) => (
-            <article key={user.id} className="panel stack">
-              <div className="row" style={{ justifyContent: "space-between" }}>
-                <strong>{user.name}</strong>
-                <div className="row">
+            <article key={user.id} className="panel">
+              <div className="item-row">
+                <div className="item-row__main">
+                  <span className="item-row__title">{user.name}</span>
+                  {user.notes ? <span className="item-row__meta">{user.notes}</span> : null}
+                </div>
+                <div className="item-row__actions">
                   {onEditUser ? (
-                    <button onClick={() => onEditUser(user.id)}>Edit</button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => onEditUser(user.id)}
+                    >
+                      Edit
+                    </button>
                   ) : null}
                   {onDeleteUser ? (
-                    <button onClick={() => onDeleteUser(user.id)}>Delete</button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm text-danger"
+                      onClick={() => onDeleteUser(user.id)}
+                    >
+                      Delete
+                    </button>
                   ) : null}
                 </div>
               </div>
-              {user.notes ? <small>{user.notes}</small> : null}
             </article>
           ))}
         </div>
