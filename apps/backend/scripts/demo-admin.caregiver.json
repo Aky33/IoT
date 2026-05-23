@@ -1,0 +1,13 @@
+[
+  {
+    "_id": { "$oid": "68302e0f9e11e2e85f2b9a01" },
+    "firstName": "Demo",
+    "lastName": "Admin",
+    "email": "admin@iot.com",
+    "passwordHash": "$2b$10$rQzMEsC75mjC3ZogqYkLceCEw2G/Fo7JpbtigHQWf0of4DWhWAxa6",
+    "role": "admin",
+    "isActive": true,
+    "createdAt": { "$date": "2026-05-23T12:00:00.000Z" },
+    "updatedAt": { "$date": "2026-05-23T12:00:00.000Z" }
+  }
+]
