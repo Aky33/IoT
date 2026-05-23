@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -19,7 +21,6 @@ import { notificationCreateRouter, notificationListRouter } from './routes/notif
 import { invitationsRouter } from './routes/invitations.js';
 import { pushRouter } from './routes/push.js';
 import { sseHandler } from './middleware/sseHandler.js';
-import { config } from './config/index.js';
 
 morgan.token('id', (req) => req.id);
 
@@ -27,16 +28,13 @@ export function createApp() {
   const app = express();
 
   app.use(requestId);
-  app.use(cors({
-    origin: config.frontendUrl || true,
-    credentials: true,
-  }));
+  app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
   app.use(cookieParser());
   app.use(morgan(':id :method :url :status :response-time ms - :res[content-length]'));
 
   // --- Public ---
-  app.get('/health', (_req, res) => {
+  app.get('/api/health', (_req, res) => {
     const dbState = mongoose.connection.readyState;
     const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
     const status = dbState === 1 ? 'ok' : 'degraded';
@@ -45,21 +43,32 @@ export function createApp() {
       .json({ status, db: dbStatus, timestamp: new Date().toISOString() });
   });
 
-  app.use('/auth', authRateLimit, authRouter);
+  app.use('/api/auth', authRateLimit, authRouter);
 
   // --- IoT Device (HMAC auth) ---
-  app.use('/notifications/create', notificationsRateLimit, authenticateDevice, notificationCreateRouter);
+  app.use('/api/notifications/create', notificationsRateLimit, authenticateDevice, notificationCreateRouter);
 
   // --- Caregiver / Admin (JWT auth) ---
-  app.use('/notifications/stream', sseHandler);
-  app.use('/notifications', authenticate, authorize('caregiver', 'admin'), notificationListRouter);
-  app.use('/push', authenticate, authorize('caregiver', 'admin'), pushRouter);
-  app.use('/invitations', authenticate, authorize('admin'), invitationsRouter);
-  app.use('/users', authenticate, authorize('admin', 'caregiver'), usersRouter);
-  app.use('/caregivers', authenticate, authorize('admin'), caregiversRouter);
-  app.use('/devices', authenticate, authorize('admin', 'caregiver'), devicesRouter);
+  app.use('/api/notifications/stream', sseHandler);
+  app.use('/api/notifications', authenticate, authorize('caregiver', 'admin'), notificationListRouter);
+  app.use('/api/push', authenticate, authorize('caregiver', 'admin'), pushRouter);
+  app.use('/api/invitations', authenticate, authorize('admin'), invitationsRouter);
+  app.use('/api/users', authenticate, authorize('admin', 'caregiver'), usersRouter);
+  app.use('/api/caregivers', authenticate, authorize('admin'), caregiversRouter);
+  app.use('/api/devices', authenticate, authorize('admin', 'caregiver'), devicesRouter);
 
-  // --- 404 ---
+  // --- SPA static files ---
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const staticDir = path.join(__dirname, '..', 'public');
+  app.use(express.static(staticDir));
+  app.get('/{*splat}', (req, res, next) => {
+    if (req.accepts('html')) {
+      return res.sendFile(path.join(staticDir, 'index.html'));
+    }
+    next();
+  });
+
+  // --- 404 (API) ---
   app.use((req, res) => {
     res.status(404).json({
       error: {

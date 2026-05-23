@@ -1,7 +1,7 @@
 import type { DeviceFormValues } from "../types/device";
 import type { UserFormValues } from "../types/user";
 
-import { request, buildUrl, ApiError } from "./api-client";
+import { request, ApiError } from "./api-client";
 import type { PaginatedResponse } from "./api-client";
 import {
   mapDevice,
@@ -88,7 +88,7 @@ function toDevicePayload(values: DeviceFormValues) {
 
 export async function listDevices() {
   const result = await request<PaginatedResponse<BackendDevice>>(
-    buildUrl("/devices/all", { pageSize: 200 }),
+    "/devices/all?pageSize=200",
   );
   return (result?.data ?? []).map(mapDevice);
 }
@@ -138,12 +138,13 @@ export async function simulateDevicePress(deviceId: string, type: "standard" | "
 // ── Notification CRUD ─────────────────────────────────────────────────────────
 
 export async function listNotifications(params: NotificationQueryParams = {}) {
+  const query = new URLSearchParams();
+  query.set("pageSize", String(params.pageSize ?? 200));
+  if (params.page !== undefined) query.set("page", String(params.page));
+  if (params.deviceId) query.set("deviceId", params.deviceId);
+
   const result = await request<PaginatedResponse<BackendNotification>>(
-    buildUrl("/notifications/all", {
-      pageSize: params.pageSize ?? 200,
-      page: params.page,
-      deviceId: params.deviceId,
-    }),
+    `/notifications/all?${query}`,
     { method: "GET" },
   );
 
@@ -157,7 +158,7 @@ export async function listNotifications(params: NotificationQueryParams = {}) {
 
 export async function listUsers() {
   const result = await request<PaginatedResponse<BackendUser>>(
-    buildUrl("/users/all", { pageSize: 200 }),
+    "/users/all?pageSize=200",
   );
   return (result?.data ?? []).map(mapUser);
 }
@@ -205,7 +206,7 @@ function mapCaregiver(c: BackendCaregiver): Caregiver {
 
 export async function listCaregivers() {
   const result = await request<PaginatedResponse<BackendCaregiver>>(
-    buildUrl("/caregivers/all", { pageSize: 200 }),
+    "/caregivers/all?pageSize=200",
   );
   return (result?.data ?? []).map(mapCaregiver);
 }

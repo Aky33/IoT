@@ -50,7 +50,7 @@ export function setRefreshFn(fn: () => Promise<boolean>) {
 
 export function buildUrl(path: string, query?: Record<string, string | number | undefined>) {
   const base = API_BASE_URL || window.location.origin;
-  const url = new URL(path, base);
+  const url = new URL(`/api${path}`, base);
 
   if (query) {
     Object.entries(query).forEach(([key, value]) => {
