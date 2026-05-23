@@ -13,6 +13,7 @@ function required(name) {
 export const config = {
   port: Number(process.env.PORT) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
+  frontendUrl: process.env.FRONTEND_URL || '',
   mongoUri,
   jwt: {
     accessSecret: required('JWT_ACCESS_SECRET'),

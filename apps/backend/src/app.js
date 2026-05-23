@@ -19,6 +19,7 @@ import { notificationCreateRouter, notificationListRouter } from './routes/notif
 import { invitationsRouter } from './routes/invitations.js';
 import { pushRouter } from './routes/push.js';
 import { sseHandler } from './middleware/sseHandler.js';
+import { config } from './config/index.js';
 
 morgan.token('id', (req) => req.id);
 
@@ -26,7 +27,10 @@ export function createApp() {
   const app = express();
 
   app.use(requestId);
-  app.use(cors({ origin: true, credentials: true }));
+  app.use(cors({
+    origin: config.frontendUrl || true,
+    credentials: true,
+  }));
   app.use(express.json());
   app.use(cookieParser());
   app.use(morgan(':id :method :url :status :response-time ms - :res[content-length]'));

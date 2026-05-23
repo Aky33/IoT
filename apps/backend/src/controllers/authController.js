@@ -27,10 +27,11 @@ function signRefreshToken(caregiver) {
 }
 
 function setRefreshCookie(res, token) {
+  const crossOrigin = Boolean(config.frontendUrl);
   res.cookie(REFRESH_COOKIE, token, {
     httpOnly: true,
-    secure: config.nodeEnv === 'production',
-    sameSite: 'strict',
+    secure: config.nodeEnv === 'production' || crossOrigin,
+    sameSite: crossOrigin ? 'none' : 'strict',
     path: '/auth',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -195,7 +196,12 @@ export const authController = {
         // Token invalid/expired — still clear the cookie.
       }
     }
-    res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
+    const crossOrigin = Boolean(config.frontendUrl);
+    res.clearCookie(REFRESH_COOKIE, {
+      path: '/auth',
+      secure: config.nodeEnv === 'production' || crossOrigin,
+      sameSite: crossOrigin ? 'none' : 'strict',
+    });
     res.status(204).end();
   },
 };
