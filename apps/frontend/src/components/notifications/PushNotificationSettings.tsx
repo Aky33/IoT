@@ -11,8 +11,13 @@ export function PushNotificationSettings({
 }: PushNotificationSettingsProps) {
   return (
     <section className="panel stack">
-      <h3>Push notification settings</h3>
-      <label>
+      <div className="stack-tight">
+        <h3>Push notifications</h3>
+        <small className="text-muted">
+          Receive alerts when a button is pressed, even with the app closed.
+        </small>
+      </div>
+      <label className="checkbox">
         <input
           type="checkbox"
           checked={enabled}

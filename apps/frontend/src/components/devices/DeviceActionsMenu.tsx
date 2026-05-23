@@ -16,13 +16,35 @@ export function DeviceActionsMenu({
   onOpenDetail,
   onEdit,
   onDelete,
-  isProcessing = false
+  isProcessing = false,
 }: DeviceActionsMenuProps) {
   return (
     <div className="row">
-      {onOpenDetail ? <button onClick={() => onOpenDetail(device.id)}>Detail</button> : null}
-      {userRole === "admin" && onEdit ? <button disabled={isProcessing} onClick={() => onEdit(device.id)}>Edit</button> : null}
-      {userRole === "admin" && onDelete ? <button disabled={isProcessing} onClick={() => onDelete(device.id)}>Delete</button> : null}
+      {onOpenDetail ? (
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => onOpenDetail(device.id)}>
+          Detail
+        </button>
+      ) : null}
+      {userRole === "admin" && onEdit ? (
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          disabled={isProcessing}
+          onClick={() => onEdit(device.id)}
+        >
+          Edit
+        </button>
+      ) : null}
+      {userRole === "admin" && onDelete ? (
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm text-danger"
+          disabled={isProcessing}
+          onClick={() => onDelete(device.id)}
+        >
+          Delete
+        </button>
+      ) : null}
     </div>
   );
 }

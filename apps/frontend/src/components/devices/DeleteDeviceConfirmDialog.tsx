@@ -16,21 +16,30 @@ export function DeleteDeviceConfirmDialog({
   onClose,
   onConfirm,
   isDeleting = false,
-  error = null
+  error = null,
 }: DeleteDeviceConfirmDialogProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="stack">
       {device && (
         <>
-          <h3>Delete device</h3>
-          <p>You are deleting: {device.name}</p>
-          {error ? <p role="alert">{error}</p> : null}
-          <div className="row">
-            <button type="button" disabled={isDeleting} onClick={() => onConfirm(device.id)}>
-              Confirm delete
-            </button>
-            <button type="button" disabled={isDeleting} onClick={onClose}>
+          <div className="modal-header">
+            <h3>Delete device</h3>
+            <p>
+              You are about to delete <strong>{device.name}</strong>. This action cannot be undone.
+            </p>
+          </div>
+          {error ? <p role="alert" className="text-danger text-sm">{error}</p> : null}
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" disabled={isDeleting} onClick={onClose}>
               Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger"
+              disabled={isDeleting}
+              onClick={() => onConfirm(device.id)}
+            >
+              {isDeleting ? "Deleting…" : "Confirm delete"}
             </button>
           </div>
         </>

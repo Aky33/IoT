@@ -27,31 +27,53 @@ export function AdminCaregiversPage({
 
   return (
     <section className="page">
-      <h2>Caregivers</h2>
-      {isLoading ? <LoadingState label="Loading caregivers..." /> : null}
+      <header className="page-header">
+        <div className="page-header__title">
+          <h2>Caregivers</h2>
+          <p>People who respond to alerts.</p>
+        </div>
+      </header>
+      {isLoading ? <LoadingState label="Loading caregivers…" /> : null}
       {error ? <ErrorState message={error} /> : null}
       {!isLoading && !error && caregivers.length === 0 ? (
         <EmptyState title="No caregivers" description="Caregivers are added via invitation." />
       ) : null}
       {!isLoading && !error && caregivers.length > 0 ? (
-        <div className="stack">
+        <div className="list-stack">
           {caregivers.map((caregiver) => (
-            <article key={caregiver.id} className="panel stack">
-              <div className="row" style={{ justifyContent: "space-between" }}>
-                <div className="stack" style={{ gap: "0.25rem" }}>
-                  <strong>{caregiver.name}</strong>
-                  <small>{caregiver.email}</small>
-                  {caregiver.phone ? <small>{caregiver.phone}</small> : null}
-                  <small>
-                    Role: {caregiver.role} &mdash; {caregiver.isActive ? "Active" : "Inactive"}
-                  </small>
+            <article key={caregiver.id} className="panel">
+              <div className="item-row">
+                <div className="item-row__main">
+                  <span className="item-row__title">
+                    {caregiver.name}
+                    <span className={`badge ${caregiver.role === "admin" ? "badge-standard" : "badge-muted"}`}>
+                      {caregiver.role}
+                    </span>
+                    {!caregiver.isActive ? <span className="badge badge-warning">Inactive</span> : null}
+                  </span>
+                  <span className="item-row__meta">
+                    {caregiver.email}
+                    {caregiver.phone ? ` · ${caregiver.phone}` : ""}
+                  </span>
                 </div>
-                <div className="row">
+                <div className="item-row__actions">
                   {onEditCaregiver ? (
-                    <button type="button" onClick={() => onEditCaregiver(caregiver.id)}>Edit</button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => onEditCaregiver(caregiver.id)}
+                    >
+                      Edit
+                    </button>
                   ) : null}
                   {onDeleteCaregiver ? (
-                    <button type="button" onClick={() => onDeleteCaregiver(caregiver.id)}>Delete</button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm text-danger"
+                      onClick={() => onDeleteCaregiver(caregiver.id)}
+                    >
+                      Delete
+                    </button>
                   ) : null}
                 </div>
               </div>

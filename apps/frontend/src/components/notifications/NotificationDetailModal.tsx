@@ -19,22 +19,36 @@ export function NotificationDetailModal({
   onOpenDeviceDetail,
 }: NotificationDetailModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="stack">
+    <Modal isOpen={isOpen} onClose={onClose}>
       {notification && (
-        <>
-          <div className="row" style={{ justifyContent: "space-between" }}>
+        <div className="stack">
+          <div className="modal-header">
             <h3>Notification detail</h3>
-            <button type="button" onClick={onClose}>Close</button>
+            <p>
+              <NotificationBadge type={notification.type} status={notification.status} />
+            </p>
           </div>
-          <NotificationBadge type={notification.type} status={notification.status} />
-          <p>Device: {notification.deviceName}</p>
-          <p>Created: {new Date(notification.createdAt).toLocaleString()}</p>
-          <div className="row">
+          <dl className="kv">
+            <dt>Device</dt>
+            <dd>{notification.deviceName}</dd>
+            <dt>Created</dt>
+            <dd>{new Date(notification.createdAt).toLocaleString()}</dd>
+          </dl>
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Close
+            </button>
             {userRole === "admin" && onOpenDeviceDetail ? (
-              <button type="button" onClick={() => onOpenDeviceDetail(notification.deviceId)}>Open device</button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => onOpenDeviceDetail(notification.deviceId)}
+              >
+                Open device
+              </button>
             ) : null}
           </div>
-        </>
+        </div>
       )}
     </Modal>
   );

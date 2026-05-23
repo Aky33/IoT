@@ -23,20 +23,24 @@ export function AdminInvitationsPage({ userRole }: AdminInvitationsPageProps) {
 
   return (
     <section className="page">
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <h2>Invitations</h2>
+      <header className="page-header">
+        <div className="page-header__title">
+          <h2>Invitations</h2>
+          <p>Generate one-time codes for new caregivers or admins.</p>
+        </div>
         <button
           type="button"
+          className="btn btn-primary"
           onClick={() => {
             createMutation.reset();
             setIsModalOpen(true);
           }}
         >
-          Create invitation
+          + Create invitation
         </button>
-      </div>
+      </header>
 
-      {isLoading ? <LoadingState label="Loading invitations..." /> : null}
+      {isLoading ? <LoadingState label="Loading invitations…" /> : null}
       {error ? <ErrorState message={error.message} /> : null}
       {!isLoading && !error && invitations.length === 0 ? (
         <EmptyState
@@ -45,40 +49,34 @@ export function AdminInvitationsPage({ userRole }: AdminInvitationsPageProps) {
         />
       ) : null}
       {!isLoading && !error && invitations.length > 0 ? (
-        <div className="stack">
+        <div className="list-stack">
           {invitations.map((invitation) => (
-            <article key={invitation.id} className="panel stack">
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div className="stack" style={{ gap: "0.25rem", flex: 1, minWidth: 0 }}>
-                  <label style={{ display: "block" }}>
-                    Code
-                    <input
-                      readOnly
-                      value={invitation.code}
-                      onClick={(e) => (e.target as HTMLInputElement).select()}
-                      style={{ fontFamily: "monospace" }}
-                    />
-                  </label>
-                  <small>
-                    Role: <strong>{invitation.role}</strong>
-                  </small>
-                  <small>Expires: {new Date(invitation.expiresAt).toLocaleString()}</small>
-                  <small>Created: {new Date(invitation.createdAt).toLocaleString()}</small>
+            <article key={invitation.id} className="panel">
+              <div className="item-row">
+                <div className="item-row__main">
+                  <span className="item-row__title text-mono">{invitation.code}</span>
+                  <span className="item-row__meta">
+                    Role <strong>{invitation.role}</strong> · Expires{" "}
+                    {new Date(invitation.expiresAt).toLocaleString()} · Created{" "}
+                    {new Date(invitation.createdAt).toLocaleString()}
+                  </span>
+                  {revokeMutation.error ? (
+                    <span className="text-danger text-sm" role="alert">
+                      {revokeMutation.error.message}
+                    </span>
+                  ) : null}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => revokeMutation.mutate(invitation.id)}
-                  disabled={revokeMutation.isPending}
-                  style={{ marginLeft: "1rem", flexShrink: 0 }}
-                >
-                  Revoke
-                </button>
+                <div className="item-row__actions">
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm text-danger"
+                    onClick={() => revokeMutation.mutate(invitation.id)}
+                    disabled={revokeMutation.isPending}
+                  >
+                    Revoke
+                  </button>
+                </div>
               </div>
-              {revokeMutation.error ? (
-                <p role="alert" style={{ color: "var(--color-danger-border)" }}>
-                  {revokeMutation.error.message}
-                </p>
-              ) : null}
             </article>
           ))}
         </div>

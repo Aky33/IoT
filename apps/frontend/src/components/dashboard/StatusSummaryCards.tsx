@@ -8,8 +8,20 @@ export function StatusSummaryCards({
   urgentNotificationsCount = 0,
 }: StatusSummaryCardsProps) {
   const cards = [
-    { key: "pending", label: "Pending notifications", value: pendingNotificationsCount, highlight: pendingNotificationsCount > 0 },
-    { key: "urgent", label: "Urgent notifications", value: urgentNotificationsCount, urgent: urgentNotificationsCount > 0 },
+    {
+      key: "pending",
+      label: "Pending notifications",
+      value: pendingNotificationsCount,
+      highlight: pendingNotificationsCount > 0,
+      urgent: false,
+    },
+    {
+      key: "urgent",
+      label: "Urgent notifications",
+      value: urgentNotificationsCount,
+      highlight: false,
+      urgent: urgentNotificationsCount > 0,
+    },
   ];
 
   return (
@@ -17,12 +29,18 @@ export function StatusSummaryCards({
       {cards.map((card) => (
         <div
           key={card.key}
-          className={`panel ${card.urgent ? "card-strong" : ""}`.trim()}
+          className={`panel ${card.urgent ? "card-strong metric-strong" : ""}`.trim()}
         >
-          <div className="stack">
-            <strong>{card.label}</strong>
-            <span>{card.value}</span>
-            {card.highlight && !card.urgent ? <small>Needs attention</small> : null}
+          <div className="metric">
+            <span className="metric-label">{card.label}</span>
+            <span className="metric-value">{card.value}</span>
+            {card.highlight && !card.urgent ? (
+              <span className="metric-trend">Needs attention</span>
+            ) : card.urgent ? (
+              <span className="metric-trend text-danger">Respond immediately</span>
+            ) : (
+              <span className="metric-trend">All quiet</span>
+            )}
           </div>
         </div>
       ))}

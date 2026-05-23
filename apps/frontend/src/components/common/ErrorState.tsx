@@ -5,10 +5,16 @@ type ErrorStateProps = {
 
 export function ErrorState({ message = "Unexpected error.", onRetry }: ErrorStateProps) {
   return (
-    <section className="panel stack" role="alert">
-      <h3>Error</h3>
-      <p>{message}</p>
-      {onRetry ? <button onClick={onRetry}>Retry</button> : null}
+    <section className="banner banner-danger stack-tight" role="alert">
+      <span className="banner-title">Something went wrong</span>
+      <span className="banner-text">{message}</span>
+      {onRetry ? (
+        <div className="row">
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onRetry}>
+            Retry
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

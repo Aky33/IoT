@@ -13,9 +13,15 @@ type DeviceCardProps = {
 
 export function DeviceCard({ device, userRole, ...actions }: DeviceCardProps) {
   return (
-    <article className="panel stack">
-      <strong>{device.name}</strong>
-      <DeviceActionsMenu device={device} userRole={userRole} {...actions} />
+    <article className="panel">
+      <div className="item-row">
+        <div className="item-row__main">
+          <span className="item-row__title">{device.name}</span>
+        </div>
+        <div className="item-row__actions">
+          <DeviceActionsMenu device={device} userRole={userRole} {...actions} />
+        </div>
+      </div>
     </article>
   );
 }

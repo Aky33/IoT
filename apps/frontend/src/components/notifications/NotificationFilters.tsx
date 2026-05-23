@@ -57,7 +57,7 @@ export function NotificationFilters({
       </select>
 
       {isActive && onReset ? (
-        <button type="button" onClick={onReset} disabled={isDisabled}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onReset} disabled={isDisabled}>
           Reset
         </button>
       ) : null}

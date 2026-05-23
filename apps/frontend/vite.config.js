@@ -4,6 +4,12 @@ export default defineConfig(function (_a) {
     var mode = _a.mode;
     var env = loadEnv(mode, process.cwd(), "");
     var backend = env.VITE_DEV_PROXY_TARGET || env.VITE_API_BASE_URL || "http://localhost:3000";
+    var previewAllowedHosts = [
+        "localhost",
+        "127.0.0.1",
+        ".code.run",
+        "web--iot-frontend--pmt59zspsmn5.code.run",
+    ];
     return {
         plugins: [react()],
         server: {
@@ -24,6 +30,11 @@ export default defineConfig(function (_a) {
                 "/push/": backend,
                 "/health": backend,
             },
+        },
+        preview: {
+            host: "0.0.0.0",
+            port: 4173,
+            allowedHosts: previewAllowedHosts,
         },
     };
 });

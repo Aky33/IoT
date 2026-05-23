@@ -18,17 +18,37 @@ export function NotificationItem({
   const isUrgentPending = notification.type === "urgent" && notification.status === "pending";
 
   return (
-    <article className="panel stack" style={isUrgentPending ? { borderColor: "#dc2626" } : undefined}>
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <strong>{notification.deviceName}</strong>
-        <NotificationBadge type={notification.type} status={notification.status} />
-      </div>
-      <small>{new Date(notification.createdAt).toLocaleString()}</small>
-      <div className="row">
-        {onOpenDetail ? <button onClick={() => onOpenDetail(notification.id)}>Detail</button> : null}
-        {userRole === "admin" && onOpenDeviceDetail ? (
-          <button onClick={() => onOpenDeviceDetail(notification.deviceId)}>Device</button>
-        ) : null}
+    <article className={`panel${isUrgentPending ? " card-strong" : ""}`}>
+      <div className="item-row">
+        <div className="item-row__main">
+          <span className="item-row__title">
+            {notification.deviceName}
+            <NotificationBadge type={notification.type} status={notification.status} />
+          </span>
+          <span className="item-row__meta">
+            {new Date(notification.createdAt).toLocaleString()}
+          </span>
+        </div>
+        <div className="item-row__actions">
+          {onOpenDetail ? (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => onOpenDetail(notification.id)}
+            >
+              Detail
+            </button>
+          ) : null}
+          {userRole === "admin" && onOpenDeviceDetail ? (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => onOpenDeviceDetail(notification.deviceId)}
+            >
+              Device
+            </button>
+          ) : null}
+        </div>
       </div>
     </article>
   );

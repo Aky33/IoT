@@ -283,7 +283,7 @@ export default function App() {
                     pushPermission={pushPermission}
                     onTogglePush={togglePush}
                   />
-                  {pushError ? <p role="alert" style={{ color: "var(--color-danger-border)" }}>{pushError}</p> : null}
+                  {pushError ? <p role="alert" className="text-danger text-sm">{pushError}</p> : null}
                 </section>
               </ProtectedRoute>
             }

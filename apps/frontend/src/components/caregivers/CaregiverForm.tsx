@@ -33,31 +33,35 @@ export function CaregiverForm({
 
   return (
     <form
-      className="panel stack"
+      className="stack"
       onSubmit={(event) => {
         event.preventDefault();
         if (canSubmit) onSubmit({ ...values, phone: values.phone || undefined });
       }}
     >
-      <h3>Edit caregiver</h3>
-      <label>
-        First name
-        <input
-          value={values.firstName}
-          onChange={(e) => setValues((p) => ({ ...p, firstName: e.target.value }))}
-          disabled={isSubmitting}
-        />
-      </label>
-      <label>
-        Last name
-        <input
-          value={values.lastName}
-          onChange={(e) => setValues((p) => ({ ...p, lastName: e.target.value }))}
-          disabled={isSubmitting}
-        />
-      </label>
-      <label>
-        Email
+      <div className="modal-header">
+        <h3>Edit caregiver</h3>
+      </div>
+      <div className="field-row">
+        <label className="field">
+          <span>First name</span>
+          <input
+            value={values.firstName}
+            onChange={(e) => setValues((p) => ({ ...p, firstName: e.target.value }))}
+            disabled={isSubmitting}
+          />
+        </label>
+        <label className="field">
+          <span>Last name</span>
+          <input
+            value={values.lastName}
+            onChange={(e) => setValues((p) => ({ ...p, lastName: e.target.value }))}
+            disabled={isSubmitting}
+          />
+        </label>
+      </div>
+      <label className="field">
+        <span>Email</span>
         <input
           type="email"
           value={values.email}
@@ -65,8 +69,8 @@ export function CaregiverForm({
           disabled={isSubmitting}
         />
       </label>
-      <label>
-        Phone (optional)
+      <label className="field">
+        <span>Phone <span className="text-subtle">(optional)</span></span>
         <input
           type="tel"
           value={values.phone ?? ""}
@@ -74,8 +78,8 @@ export function CaregiverForm({
           disabled={isSubmitting}
         />
       </label>
-      <label>
-        Role
+      <label className="field">
+        <span>Role</span>
         <select
           value={values.role ?? "caregiver"}
           onChange={(e) => setValues((p) => ({ ...p, role: e.target.value }))}
@@ -85,10 +89,14 @@ export function CaregiverForm({
           <option value="admin">Admin</option>
         </select>
       </label>
-      {error ? <p role="alert">{error}</p> : null}
-      <div className="row">
-        <button type="submit" disabled={!canSubmit}>Save</button>
-        <button type="button" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+      {error ? <p role="alert" className="text-danger text-sm">{error}</p> : null}
+      <div className="modal-actions">
+        <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={isSubmitting}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
+          {isSubmitting ? "Saving…" : "Save"}
+        </button>
       </div>
     </form>
   );

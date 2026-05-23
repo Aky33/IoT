@@ -22,26 +22,55 @@ export function CreateDeviceModal({
   onClose,
   onCreate,
   isSubmitting = false,
-  error = null
+  error = null,
 }: CreateDeviceModalProps) {
   const [created, setCreated] = useState<CreatedDevice | null>(null);
 
   if (created) {
     return (
-      <Modal isOpen={isOpen} onClose={() => { setCreated(null); onClose(); }} className="panel stack">
-        <h3>Device created</h3>
-        <p>Save these credentials — the secret will not be shown again.</p>
-        <label>
-          Device ID
-          <input readOnly value={created.id} onClick={(e) => (e.target as HTMLInputElement).select()} />
-        </label>
-        <label>
-          Device Secret
-          <input readOnly value={created.deviceSecret} onClick={(e) => (e.target as HTMLInputElement).select()} />
-        </label>
-        <button type="button" onClick={() => { setCreated(null); onClose(); }}>
-          Close
-        </button>
+      <Modal
+        isOpen={isOpen}
+        onClose={() => {
+          setCreated(null);
+          onClose();
+        }}
+      >
+        <div className="stack">
+          <div className="modal-header">
+            <h3>Device created</h3>
+            <p>Save these credentials — the secret will not be shown again.</p>
+          </div>
+          <label className="field">
+            <span>Device ID</span>
+            <input
+              className="text-mono"
+              readOnly
+              value={created.id}
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+            />
+          </label>
+          <label className="field">
+            <span>Device Secret</span>
+            <input
+              className="text-mono"
+              readOnly
+              value={created.deviceSecret}
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+            />
+          </label>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                setCreated(null);
+                onClose();
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
       </Modal>
     );
   }

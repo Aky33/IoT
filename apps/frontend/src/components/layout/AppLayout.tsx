@@ -34,7 +34,7 @@ export function AppLayout({
         notificationCount={notificationCount}
         urgentNotificationCount={urgentNotificationCount}
       />
-      <main>{children}</main>
+      <main className="app-main">{children}</main>
     </div>
   );
 }

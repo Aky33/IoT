@@ -24,7 +24,7 @@ export function AdminDevicesPage({
   onCreateDevice,
   onEditDevice,
   onDeleteDevice,
-  onOpenDeviceDetail
+  onOpenDeviceDetail,
 }: AdminDevicesPageProps) {
   if (userRole !== "admin") {
     return <ErrorState message="Access denied." />;
@@ -32,11 +32,22 @@ export function AdminDevicesPage({
 
   return (
     <section className="page">
-      <h2>Admin devices</h2>
-      {onCreateDevice ? <button onClick={onCreateDevice}>Create device</button> : null}
-      {isLoading ? <LoadingState label="Loading admin devices..." /> : null}
+      <header className="page-header">
+        <div className="page-header__title">
+          <h2>Devices</h2>
+          <p>Manage IoT care buttons and their assignments.</p>
+        </div>
+        {onCreateDevice ? (
+          <button type="button" className="btn btn-primary" onClick={onCreateDevice}>
+            + Create device
+          </button>
+        ) : null}
+      </header>
+      {isLoading ? <LoadingState label="Loading devices…" /> : null}
       {error ? <ErrorState message={error} /> : null}
-      {!isLoading && !error && devices.length === 0 ? <EmptyState title="No devices" /> : null}
+      {!isLoading && !error && devices.length === 0 ? (
+        <EmptyState title="No devices yet" description="Create your first device to get started." />
+      ) : null}
       {!isLoading && !error && devices.length > 0 ? (
         <DeviceList
           devices={devices}
